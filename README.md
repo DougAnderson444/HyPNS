@@ -1,3 +1,6 @@
+![travis-ci-badge](https://travis-ci.com/DougAnderson444/HyPNS.svg?branch=main)
+[![codecov](https://codecov.io/gh/DougAnderson444/HyPNS/branch/main/graph/badge.svg?token=IQ3DGMTFKU)](undefined)
+
 # HyPNS
 Hypercore-protocol + IPNS = HyPNS
 

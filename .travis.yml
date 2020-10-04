@@ -6,3 +6,5 @@ sudo: false
 
 script:
   - npm test -- --allow-chrome-as-root
+
+after_success: npm run coverage

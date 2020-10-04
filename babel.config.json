@@ -1,11 +1,23 @@
 {
   "plugins": [
-    ["module-resolver", {
-      "alias": {
-        "multifeed": "hypermultifeed",
-        "hyperswarm": "hyperswarm-web",
-        "util" : "./node_modules/util/util.js"
+    [
+      "module-resolver",
+      {
+        "alias": {
+          "multifeed": "hypermultifeed",
+          "hyperswarm": "hyperswarm-web",
+          "util": "./node_modules/util/util.js"
+        }
       }
-    }]
-  ]
+    ]
+  ],
+  "env": {
+    "test": {
+      "plugins": [
+        [
+          "istanbul"
+        ]
+      ]
+    }
+  }
 }

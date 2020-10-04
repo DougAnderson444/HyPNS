@@ -2,11 +2,12 @@
   "name": "hypns",
   "version": "1.0.0",
   "description": "Hybrid of Hyper-protocol and IPNS; a module to pin IPNS names using hyper-protocol",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "test": "npm run test-browser && npm run test-node",
+    "test": "npm run test-browser && npm run test-node && npm run coverage",
     "test-browser": "mochify --transform [ babelify --global ] ",
-    "test-node": "mocha --exit",
+    "test-node": "cross-env NODE_ENV=test nyc mocha --exit",
+    "coverage": "codecov",
     "debug": "mochify --debug",
     "watch": "mochify --watch",
     "webdriver": "mochify --wd"
@@ -25,14 +26,22 @@
   "devDependencies": {
     "@babel/core": "^7.11.6",
     "@babel/preset-env": "^7.11.5",
+    "@babel/register": "^7.11.5",
+    "@istanbuljs/nyc-config-babel": "^3.0.0",
+    "babel-plugin-istanbul": "^6.0.0",
     "babel-plugin-module-resolver": "^4.0.0",
     "babelify": "^10.0.0",
     "browser-run": "^8.0.0",
     "browserify": "^16.5.2",
     "chai": "^4.2.0",
+    "codecov": "^3.7.2",
+    "coveralls": "^3.1.0",
+    "cross-env": "^7.0.2",
     "hyperswarm-web": "^2.1.1",
     "mocha": "^8.1.3",
+    "mocha-lcov-reporter": "^1.3.0",
     "mochify": "^6.6.0",
+    "nyc": "^15.1.0",
     "util": "^0.12.3"
   },
   "repository": {
@@ -47,5 +56,9 @@
   "bugs": {
     "url": "https://github.com/DougAnderson444/HyPNS/issues"
   },
-  "homepage": "https://github.com/DougAnderson444/HyPNS#readme"
+  "homepage": "https://github.com/DougAnderson444/HyPNS#readme",
+  "nyc": {
+    "sourceMap": false,
+    "instrument": false
+  }
 }

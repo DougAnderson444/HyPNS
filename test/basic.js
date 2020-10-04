@@ -2,7 +2,7 @@ var chai = require("chai");
 
 var assert = require("assert");
 
-const HyPNS = require("..");
+const HyPNS = require("../src");
 const { expect } = require("chai");
 
 const mockPublicKey =
