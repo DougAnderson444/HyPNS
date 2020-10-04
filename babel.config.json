@@ -1,0 +1,11 @@
+{
+  "plugins": [
+    ["module-resolver", {
+      "alias": {
+        "multifeed": "hypermultifeed",
+        "hyperswarm": "hyperswarm-web",
+        "util" : "./node_modules/util/util.js"
+      }
+    }]
+  ]
+}
