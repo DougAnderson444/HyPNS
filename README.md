@@ -10,7 +10,7 @@ HyPNS simply points a public key to some data, and pins that data. To get that d
 
 ## Why?
 
-I thought when I published a value to IPNS that it stayed on the Distrubuted Hash Table permanently. I was wrong. It only stays published for 24 hours and then gets wiped. I need a naming system that publishes AND pins the value, and can be replicated by peers to be kept online.
+I thought when I published a value to IPNS that it stayed on the Distrubuted Hash Table permanently. I was wrong. It only stays published for 24 hours and then gets wiped. I need a naming system that publishes AND pins the value, and can be replicated by peers to be kept online. Hypercore-protocol is the answer to that.
 
 ## Solution
 
@@ -22,42 +22,32 @@ Take a public key and pin a signed mutable value to it
 
 Generate a ed25519 keypair 
 ```js
-// using sodium library
-const sodium = require('sodium-universal')
-const seedSodium = Buffer.allocUnsafe(sodium.crypto_hash_sha256_BYTES)
-sodium.crypto_hash_sha256(seedSodium, Buffer.from(seedPhrase))
-console.log(`seed is`, seedSodium.toString("hex"))
-
-// hypercore crypto makes using sodium a bit easier
+// using hypercore crypto to generate public-private keypair
 const hcrypto = require("hypercore-crypto");
-const keypair = hcrypto.keyPair(seedSodium) 
+const keypair = hcrypto.keyPair() 
 // is Ed25519 keypair see: https://libsodium.gitbook.io/doc/public-key_cryptography/public-key_signatures
 ```
 
-The data you want to which you want resolve:
+Pick the data you want to which you want publish and resolve:
 ```js
-const pointers = {
+const data = {
     ipfs: "ipfs/QmCideeeeeeeeeeeeeeeeeeeeeeee",  // point to an ever changing ipfs root CID, just like IPNS
     feed: "abc123def456abc123def456abc123def456", // point to a hypercore feed if you like
-    "Fave Colour": "Bleu" // evenr point to your favourite colour of the day, spelled the Canadian way
+    "Fave Colour": "Bleu" // even point to your favourite Canadian colour of the day
 }
 ```
 
-Publish pointer(s) to HyPNS:
+Publish that data to that Public Key using HyPNS:
 
 ```js
 const HyPNS = require("hypns")
-const opts = { corestore, networker, persist }
-const ns = new HyPNS(keypair, opts) // pass in optional Corestore and networker
-ns.publish(pointers)
+const opts = { persist: false } // use RAM (or disk)
+const nameSys = new HyPNS(keypair, opts) // pass in options
+nameSys.publish(data)
 ```
-Those pointers are now available at
-
-> ```hyper://{keypair.publicKey.toString("hex")}```
-
-Resolve pointers from a HyPNS
+Those data are now available to be resolved from HyPNS
 ```js
-const resolvedData = ns.resolve(keypair.publicKey.toString("hex"))
+const resolvedData = nameSys.resolve(keypair.publicKey.toString("hex"))
 console.log(resolvedData) 
 /*
 {

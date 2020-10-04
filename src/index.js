@@ -11,12 +11,17 @@ var memdb = require("level-mem");
 var RAM = require("random-access-memory");
 const RAI = require("@DougAnderson444/random-access-idb");
 
+const pify = require("pify"); // promisify
+var EventEmitter = require("events").EventEmitter;
+const once = require("events.once"); // polyfill for nodejs events.once in the browser
+
 let isBrowser = process.title === "browser";
 
 class HyPNS {
   constructor(keypair, opts) {
     this._keypair = keypair;
-    this._latest = null;
+    this.latest = null;
+    this.core;
     this._storage = opts.persist == false ? RAM : getNewStorage();
     this.ready = this.open.bind(this);
   }
@@ -47,15 +52,18 @@ class HyPNS {
       }
     });
 
-    var core = kappa(store, { multifeed: multi }); // store not used since we pass in a multifeed
-    core.use("pointer", timestampView);
-    core.ready("pointer", () => {
-      core.writer("kappa-local", function (err, feed) {
+    this.core = kappa(store, { multifeed: multi }); // store not used since we pass in a multifeed
+    this.core.use("pointer", timestampView);
+    this.core.ready("pointer", () => {
+      self.core.writer("kappa-local", function (err, feed) {
         if (err) console.error(err);
         self.publish = self.publish.bind(feed);
+
         feed.ready(() => {
-          core.api.pointer.tail(1, function (msgs) {
-            self._latest = msgs[0].value;
+          self.latest = new EventEmitter();
+
+          self.core.api.pointer.tail(1, function (msgs) {
+            self.latest.emit("update", msgs[0].value);
           });
 
           cb();
@@ -64,12 +72,12 @@ class HyPNS {
     });
   }
 
-  publish(data) {
+  async publish(data) {
     let objPub = {
       ...data,
       timestamp: new Date().toISOString(),
     };
-    this.append(objPub); // this. gets bound to the object's kappa-local feed above 
+    await pify(this).append(objPub); // this. gets bound to the object's kappa-local feed above
     return objPub;
   }
 
@@ -77,8 +85,10 @@ class HyPNS {
     return this._keypair.publicKey.toString("hex");
   }
 
-  get latest() {
-    return this._latest;
+  async read() {
+    // get the last saved entry
+    const msgs = await pify(this.core.api.pointer.read)({ limit: 1, reverse: true }) 
+    return msgs[0].value.text;
   }
 }
 
