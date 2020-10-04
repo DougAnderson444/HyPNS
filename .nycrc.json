@@ -2,9 +2,17 @@
     "extends": "@istanbuljs/nyc-config-babel",
     "all": true,
     "check-coverage": false,
+    "require": [
+        "@babel/register"
+    ],
     "exclude": [
         "**/test/*",
         "**/coverage/*"
     ],
-    "reporter": "text"
+    "reporter": [
+        "lcov",
+        "text"
+    ],
+    "sourceMap": false,
+    "instrument": false
 }
