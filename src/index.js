@@ -22,63 +22,69 @@ class HyPNS {
     this._keypair = keypair;
     this.latest = null;
     this.core;
+    this.publish;
     this._storage = opts.persist == false ? RAM : getNewStorage();
-    this.ready = this.open.bind(this);
+    this.ready = this.open();
   }
 
-  open(cb) {
-    var self = this;
-    const store = new Corestore(this._storage);
+  async open() {
+    return new Promise(async (resolve, reject) => {
+      var self = this;
+      const store = new Corestore(this._storage);
 
-    const swarmOpts = {};
-    const swarmNetworker = new SwarmNetworker(store, swarmOpts);
-    var network = new MultifeedNetworker(swarmNetworker); // multi + network = swarm
+      const swarmOpts = {};
+      const swarmNetworker = new SwarmNetworker(store, swarmOpts);
+      var network = new MultifeedNetworker(swarmNetworker); // multi + network = swarm
 
-    var multi = new Multifeed(store, {
-      rootKey: this._keypair.publicKey,
-      valueEncoding: "json",
-    });
-    network.swarm(multi);
+      var multi = new Multifeed(store, {
+        rootKey: this._keypair.publicKey,
+        valueEncoding: "json",
+      });
+      network.swarm(multi);
 
-    /**
-     * KAPPA VIEWS of the multifeed
-     */
-    var timestampView = list(memdb(), function (msg, next) {
-      if (msg.value.timestamp && typeof msg.value.timestamp === "string") {
-        // sort on the 'timestamp' field
-        next(null, [msg.value.timestamp]);
-      } else {
-        next();
-      }
-    });
+      /**
+       * KAPPA VIEWS of the multifeed
+       */
+      var timestampView = list(memdb(), function (msg, next) {
+        if (msg.value.timestamp && typeof msg.value.timestamp === "string") {
+          // sort on the 'timestamp' field
+          next(null, [msg.value.timestamp]);
+        } else {
+          next();
+        }
+      });
 
-    this.core = kappa(store, { multifeed: multi }); // store not used since we pass in a multifeed
-    this.core.use("pointer", timestampView);
-    this.core.ready("pointer", () => {
-      self.core.writer("kappa-local", function (err, feed) {
-        if (err) console.error(err);
-        self.publish = self.publish.bind(feed);
+      this.core = kappa(store, { multifeed: multi }); // store not used since we pass in a multifeed
+      this.core.use("pointer", timestampView);
+      this.core.ready("pointer", () => {
+        self.core.writer("kappa-local", function (err, feed) {
+          if (err) {
+            reject(false);
+            throw err;
+          }
 
-        feed.ready(() => {
-          self.latest = new EventEmitter();
+          function pub(data) {
+            let objPub = {
+              ...data,
+              timestamp: new Date().toISOString(),
+            };
+            //await pify(this.append)(objPub); // this. gets bound to the object's kappa-local feed above
+            this.append(objPub);
+            return objPub;
+          }
 
-          self.core.api.pointer.tail(1, function (msgs) {
-            self.latest.emit("update", msgs[0].value);
+          self.publish = pub.bind(feed);
+
+          feed.ready(() => {
+            self.latest = new EventEmitter();
+            self.core.api.pointer.tail(1, function (msgs) {
+              self.latest.emit("update", msgs[0].value);
+            });
+            resolve(true);
           });
-
-          cb();
         });
       });
     });
-  }
-
-  async publish(data) {
-    let objPub = {
-      ...data,
-      timestamp: new Date().toISOString(),
-    };
-    await pify(this).append(objPub); // this. gets bound to the object's kappa-local feed above
-    return objPub;
   }
 
   get publicKey() {
@@ -87,8 +93,13 @@ class HyPNS {
 
   async read() {
     // get the last saved entry
-    const msgs = await pify(this.core.api.pointer.read)({ limit: 1, reverse: true }) 
-    return msgs[0].value.text;
+    const msgs = await pify(this.core.api.pointer.read)({
+      limit: 1,
+      reverse: true,
+    });
+    return msgs && msgs.length > 0 && msgs[0].value && msgs[0].value.text
+      ? msgs[0].value.text
+      : null;
   }
 }
 

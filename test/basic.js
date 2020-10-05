@@ -17,45 +17,41 @@ const mockKeypair = {
   secretKey: mockPrivateKey,
 };
 const mockObjPub = {
-  text: "Some test data to publish" + new Date().toISOString(),
-  type: "chat-message",
-  nickname: "cat-lover",
-};
-const mockObjPub2 = {
   text: "Some test data to publish " + new Date().toISOString(),
   type: "chat-message",
   nickname: "cat-lover",
 };
+const mockObjPub2 = {
+  text: "Some other test data to publish " + new Date().toISOString(),
+  type: "chat-message",
+  nickname: "cat-lover",
+};
 
-describe("Basic", function () {
+describe("Basic", async function () {
   //arrange
   const opts = { persist: false };
   //act
-  const nameSys = new HyPNS(mockKeypair, opts); // pass in optional Corestore and networker
-
-  it("should create a HyPNS instance", function () {
+  var nameSys = new HyPNS(mockKeypair, opts); // pass in optional Corestore and networker
+  
+  it("should create a HyPNS instance, ok?", async function () {
     //assert
     expect(nameSys.publicKey).to.equal(mockPublicKey);
-    expect(nameSys.latest).to.equal(null);
+    await nameSys.ready;
+    const latest = await nameSys.read();
+    expect(latest).to.equal(null);
   });
 
-  it("should publish after ready", function () {
-    nameSys.ready(async () => {
-      const retVal = await nameSys.publish(mockObjPub);
-      //assert
-      expect(retVal.text).to.equal(mockObjPub.text);
-    });
-  });
-
-  it("should publish a second value", async function () {
-    const retVal = await nameSys.publish(mockObjPub2);
-    //assert
-    expect(retVal.text).to.equal(mockObjPub2.text);
-  });
-
-  it("should emit the latest value", async function () {
+  it("should publish and emit the same", async function () {  
+    const retVal = nameSys.publish(mockObjPub);
     const [val] = await once(nameSys.latest, "update");
-    //assert
+    expect(retVal.text).to.equal(mockObjPub.text);
+    expect(val.text).to.equal(mockObjPub.text);
+  });
+
+  it("should publish a second value and emit the same", async function () {
+    const retVal = nameSys.publish(mockObjPub2);
+    const [val] = await once(nameSys.latest, "update");
+    expect(retVal.text).to.equal(mockObjPub2.text);
     expect(val.text).to.equal(mockObjPub2.text);
   });
 
