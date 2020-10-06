@@ -1,4 +1,7 @@
-const { expect, assert } = require("chai");
+const chai = require("chai");
+var chaiAsPromised = require("chai-as-promised");
+chai.use(chaiAsPromised);
+var expect = chai.expect;
 
 const HyPNS = require("../src");
 const once = require("events.once"); // polyfill for nodejs events.once in the browser
@@ -28,21 +31,37 @@ describe("Writer", async function () {
   const opts = { persist: false };
   var nameSys = new HyPNS(mockKeypair, opts); // pass in optional Corestore and networker
 
-  it("should create a HyPNS instance, ok?", async function () {
+  before(async function () {
+    // runs once before the first test in this block
     await nameSys.ready;
+  });
+
+  after(function (done) {
+    // runs once after the last test in this block
+    this.timeout(30000); // takes time to close all the connections
+    nameSys.close().then(done);
+  });
+
+  it("should create a HyPNS instance", async function () {
     expect(nameSys.publicKey).to.equal(mockPublicKey);
-    const latest = await nameSys.read();
-    expect(latest).to.equal(null);
+  });
+
+  it("should start with empty latest value", function (done) {
+    nameSys.read().then((val) => {
+      expect(val).to.equal(null);
+      done();
+    });
   });
 
   it("should be writable", async function () {
-    assert.isTrue(nameSys.writable());
+    expect(nameSys.writable()).to.be.true;
   });
 
   it("should publish and emit the same", async function () {
     const retVal = nameSys.publish(mockObjPub);
-    const [val] = await once(nameSys.latest, "update");
     expect(retVal.text).to.equal(mockObjPub.text);
+
+    const [val] = await once(nameSys.latest, "update");
     expect(val.text).to.equal(mockObjPub.text);
   });
 
@@ -53,7 +72,7 @@ describe("Writer", async function () {
     expect(val.text).to.equal(mockObjPub2.text);
   });
 
-  it("should ignore entries without a timestamp", async function () {
+  it("should ignore entries without a timestamp", function (done) {
     expect(nameSys.core.feeds().length).to.equal(1);
     // saved from another library to this publicKey
     helper.anotherWriter(nameSys.core, async () => {
@@ -63,8 +82,11 @@ describe("Writer", async function () {
         totalEntries += f.length;
       });
       expect(totalEntries).to.equal(3);
-      const latest = await nameSys.read();
-      expect(latest).to.equal(mockObjPub2.text);
+
+      nameSys.read().then((val) => {
+        expect(val).to.equal(mockObjPub2.text);
+        done();
+      });
     });
   });
 });
@@ -76,36 +98,42 @@ describe("Errors", async function () {
     }).to.throw();
   });
 
-  it("should not be writable if bad secret key is passed", async function () {
-    const badSecretKey = new HyPNS(
+  it("should not be writable if bad secret key is passed", function (done) {
+    var badSecretKey = new HyPNS(
       { publicKey: mockPublicKey, secretKey: "foo" },
       { persist: false }
     );
-    assert.isFalse(badSecretKey.writable());
+    badSecretKey.ready.then(() => {
+      expect(badSecretKey.writable()).to.be.false;
+      done();
+    });
   });
 });
 
 describe("Reader", async function () {
-  it("should be read only if only passed Public key and no private key", async function () {
-    const readerOnly = new HyPNS({ publicKey: mockPublicKey }, { persist: false });
-    assert.isFalse(readerOnly.writable());
+  it("should be read only if only passed Public key and no private key", function (done) {
+    var readerOnly = new HyPNS(
+      { publicKey: mockPublicKey },
+      { persist: false }
+    );
+    readerOnly.ready.then(() => {
+      expect(readerOnly.writable()).to.be.false;
+      done();
+    });
   });
 });
 
-describe("Storage", async function () {
-  const opts = { persist: true };
-  var persistH = new HyPNS(mockKeypair, opts); // pass in optional Corestore and networker
+describe("Storage", function () {
+  it("should persist in tmp dir", function (done) {
+    var persistH = new HyPNS(mockKeypair, { persist: true }); // pass in optional Corestore and networker
 
-  it("should persist in tmp dir", async function () {
-    await persistH.ready;
-
-    const retVal = persistH.publish(mockObjPub);
-    const [val] = await once(persistH.latest, "update");
-
-    expect(retVal.text).to.equal(mockObjPub.text);
-    expect(val.text).to.equal(mockObjPub.text);
-
-    // TODO: test whether the file made it to the 'tmp' directory
+    persistH.ready.then(async () => {
+      let mockOb = { text: "saved data " + new Date().toISOString() };
+      persistH.publish(mockOb);
+      const [val] = await once(persistH.latest, "update");
+      expect(val.text).to.equal(mockOb.text);
+      done();
+    });
   });
 });
 //process.exit(1);
