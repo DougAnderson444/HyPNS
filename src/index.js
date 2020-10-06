@@ -15,12 +15,21 @@ const pify = require("pify"); // promisify
 var EventEmitter = require("events").EventEmitter;
 const once = require("events.once"); // polyfill for nodejs events.once in the browser
 
+const hcrypto = require("hypercore-crypto");
+const sodium = require("sodium-universal");
+
 let isBrowser = process.title === "browser";
 
 class HyPNS {
   constructor(keypair, opts) {
+    if (
+      !keypair.publicKey ||
+      Buffer.byteLength(keypair.publicKey, "hex") !==
+        sodium.crypto_sign_PUBLICKEYBYTES
+    )
+      throw new Error("Must include a publicKey");
     this._keypair = keypair;
-    this.latest = null;
+    this.latest = new EventEmitter();
     this.core;
     this.publish;
     this._storage = opts.persist == false ? RAM : getNewStorage();
@@ -55,38 +64,67 @@ class HyPNS {
       });
 
       this.core = kappa(store, { multifeed: multi }); // store not used since we pass in a multifeed
+
+      // read
       this.core.use("pointer", timestampView);
+      this.core.api.pointer.tail(1, function (msgs) {
+        self.latest.emit("update", msgs[0].value);
+      });
+
+      // if writable, wait for writeify to complete
+      if (this.writable()) await this.writeify();
+      resolve(true);
+    });
+  }
+
+  writable() {
+    if (!this._keypair.secretKey) return false;
+    if (
+      Buffer.byteLength(this._keypair.secretKey, "hex") !==
+      sodium.crypto_sign_SECRETKEYBYTES
+    )
+      return false;
+
+    const message = Buffer.from("any msg will do", "utf8")
+
+    // sign something with this secretKey
+    const signature = Buffer.allocUnsafe(sodium.crypto_sign_BYTES)
+    sodium.crypto_sign_detached(signature, message, Buffer.from(this._keypair.secretKey, "hex"))
+
+    // verify the signature matches the given public key
+    return sodium.crypto_sign_verify_detached(signature, message, Buffer.from(this._keypair.publicKey, 'hex')) 
+  }
+
+  async writeify() {
+    return new Promise(async (resolve, reject) => {
+      var self = this;
+
+      // write
       this.core.ready("pointer", () => {
         self.core.writer("kappa-local", function (err, feed) {
-          if (err) {
-            reject(false);
-            throw err;
-          }
+          if (err) reject(err);
 
           function pub(data) {
+            const signature = hcrypto.sign(
+              Buffer.from(self._keypair.publicKey, "hex"),
+              Buffer.from(self._keypair.secretKey, "hex")
+            );
             let objPub = {
               ...data,
+              signature,
               timestamp: new Date().toISOString(),
             };
-            //await pify(this.append)(objPub); // this. gets bound to the object's kappa-local feed above
-            this.append(objPub);
+            this.append(objPub); // this gets bound to the object's kappa-local feed above
             return objPub;
           }
 
-          self.publish = pub.bind(feed);
+          self.publish = pub.bind(feed); // bind feed to this in pub()
 
-          feed.ready(() => {
-            self.latest = new EventEmitter();
-            self.core.api.pointer.tail(1, function (msgs) {
-              self.latest.emit("update", msgs[0].value);
-            });
-            resolve(true);
-          });
+          feed.ready(() => resolve(true));
         });
       });
     });
   }
-
   get publicKey() {
     return this._keypair.publicKey.toString("hex");
   }
@@ -107,10 +145,7 @@ module.exports = HyPNS;
 
 function getNewStorage() {
   if (isBrowser) {
-    // Get a random number, use it for random-access-application
-    const name = "hypns"; // + new Date(Date.now()).toLocaleString();
-    //return RAA(name);
-    return RAI(name);
+    return RAI("hypns"); // browser
   } else {
     return require("tmp").dirSync({
       prefix: "hypns-",

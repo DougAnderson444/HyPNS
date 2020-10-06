@@ -1,7 +1,4 @@
-var chai = require("chai");
-
-var assert = require("assert");
-const { expect } = require("chai");
+const { expect, assert } = require("chai");
 
 const HyPNS = require("../src");
 const once = require("events.once"); // polyfill for nodejs events.once in the browser
@@ -27,21 +24,22 @@ const mockObjPub2 = {
   nickname: "cat-lover",
 };
 
-describe("Basic", async function () {
-  //arrange
+describe("Writer", async function () {
   const opts = { persist: false };
-  //act
   var nameSys = new HyPNS(mockKeypair, opts); // pass in optional Corestore and networker
-  
+
   it("should create a HyPNS instance, ok?", async function () {
-    //assert
-    expect(nameSys.publicKey).to.equal(mockPublicKey);
     await nameSys.ready;
+    expect(nameSys.publicKey).to.equal(mockPublicKey);
     const latest = await nameSys.read();
     expect(latest).to.equal(null);
   });
 
-  it("should publish and emit the same", async function () {  
+  it("should be writable", async function () {
+    assert.isTrue(nameSys.writable());
+  });
+
+  it("should publish and emit the same", async function () {
     const retVal = nameSys.publish(mockObjPub);
     const [val] = await once(nameSys.latest, "update");
     expect(retVal.text).to.equal(mockObjPub.text);
@@ -71,4 +69,43 @@ describe("Basic", async function () {
   });
 });
 
+describe("Errors", async function () {
+  it("should throw Err if no public key is passed", async function () {
+    expect(() => {
+      new HyPNS({}, { persist: false });
+    }).to.throw();
+  });
+
+  it("should not be writable if bad secret key is passed", async function () {
+    const badSecretKey = new HyPNS(
+      { publicKey: mockPublicKey, secretKey: "foo" },
+      { persist: false }
+    );
+    assert.isFalse(badSecretKey.writable());
+  });
+});
+
+describe("Reader", async function () {
+  it("should be read only if only passed Public key and no private key", async function () {
+    const readerOnly = new HyPNS({ publicKey: mockPublicKey }, { persist: false });
+    assert.isFalse(readerOnly.writable());
+  });
+});
+
+describe("Storage", async function () {
+  const opts = { persist: true };
+  var persistH = new HyPNS(mockKeypair, opts); // pass in optional Corestore and networker
+
+  it("should persist in tmp dir", async function () {
+    await persistH.ready;
+
+    const retVal = persistH.publish(mockObjPub);
+    const [val] = await once(persistH.latest, "update");
+
+    expect(retVal.text).to.equal(mockObjPub.text);
+    expect(val.text).to.equal(mockObjPub.text);
+
+    // TODO: test whether the file made it to the 'tmp' directory
+  });
+});
 //process.exit(1);

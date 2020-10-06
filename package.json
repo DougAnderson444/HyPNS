@@ -4,9 +4,9 @@
   "description": "Hybrid of Hyper-protocol and IPNS; a module to pin IPNS names using hyper-protocol",
   "main": "src/index.js",
   "scripts": {
-    "build-browser": "browserify -t [ babelify --global ] --standalone hypns src/index.js > hypns-bundle.js",
+    "build-browser": "browserify -t [ babelify --global --ignore [ test ] ] --standalone hypns src/index.js > hypns-bundle.js",
     "test": "npm run test-browser && npm run test-node",
-    "test-browser": "mochify --transform [ babelify --global ] ",
+    "test-browser": "mochify --chrome --transform [ babelify --global --ignore [ test ] ] ",
     "test-node": "cross-env NODE_ENV=test nyc mocha --exit",
     "coverage": "codecov",
     "debug": "mochify --debug",
