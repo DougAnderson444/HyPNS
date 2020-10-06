@@ -31,8 +31,10 @@ class HyPNS {
     this._keypair = keypair;
     this.latest = new EventEmitter();
     this.core;
+    this.multi;
+    this.swarmNetworker;
     this.publish;
-    this._storage = opts.persist == false ? RAM : getNewStorage();
+    this._storage = opts.persist === false || !opts.storage ? RAM : getNewStorage();
     this.ready = this.open();
   }
 
@@ -42,14 +44,24 @@ class HyPNS {
       const store = new Corestore(this._storage);
 
       const swarmOpts = {};
-      const swarmNetworker = new SwarmNetworker(store, swarmOpts);
-      var network = new MultifeedNetworker(swarmNetworker); // multi + network = swarm
+      this.swarmNetworker = new SwarmNetworker(store, swarmOpts);
+      var network = new MultifeedNetworker(this.swarmNetworker); 
 
-      var multi = new Multifeed(store, {
+      this.multi = new Multifeed(store, {
         rootKey: this._keypair.publicKey,
         valueEncoding: "json",
       });
-      network.swarm(multi);
+      network.swarm(this.multi);
+
+      // handle shutdown gracefully
+      const closeHandler = async () => {
+        console.log("Shutting down...");
+        await this.close();
+        process.exit();
+      };
+
+      process.on("SIGINT", closeHandler);
+      process.on("SIGTERM", closeHandler);
 
       /**
        * KAPPA VIEWS of the multifeed
@@ -63,7 +75,7 @@ class HyPNS {
         }
       });
 
-      this.core = kappa(store, { multifeed: multi }); // store not used since we pass in a multifeed
+      this.core = kappa(store, { multifeed: this.multi }); // store not used since we pass in a multifeed
 
       // read
       this.core.use("pointer", timestampView);
@@ -77,6 +89,11 @@ class HyPNS {
     });
   }
 
+  async close() {
+    this.multi.close();
+    await this.swarmNetworker.close(); //Shut down the swarm networker.
+  }
+
   writable() {
     if (!this._keypair.secretKey) return false;
     if (
@@ -85,14 +102,22 @@ class HyPNS {
     )
       return false;
 
-    const message = Buffer.from("any msg will do", "utf8")
+    const message = Buffer.from("any msg will do", "utf8");
 
     // sign something with this secretKey
-    const signature = Buffer.allocUnsafe(sodium.crypto_sign_BYTES)
-    sodium.crypto_sign_detached(signature, message, Buffer.from(this._keypair.secretKey, "hex"))
+    const signature = Buffer.allocUnsafe(sodium.crypto_sign_BYTES);
+    sodium.crypto_sign_detached(
+      signature,
+      message,
+      Buffer.from(this._keypair.secretKey, "hex")
+    );
 
     // verify the signature matches the given public key
-    return sodium.crypto_sign_verify_detached(signature, message, Buffer.from(this._keypair.publicKey, 'hex')) 
+    return sodium.crypto_sign_verify_detached(
+      signature,
+      message,
+      Buffer.from(this._keypair.publicKey, "hex")
+    );
   }
 
   async writeify() {
