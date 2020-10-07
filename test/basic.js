@@ -39,7 +39,10 @@ describe("Writer", async function () {
   after(function (done) {
     // runs once after the last test in this block
     this.timeout(30000); // takes time to close all the connections
-    nameSys.close().then(done);
+    nameSys
+      .close()
+      .catch((err) => console.error(err))
+      .then(done);
   });
 
   it("should create a HyPNS instance", async function () {
@@ -47,10 +50,13 @@ describe("Writer", async function () {
   });
 
   it("should start with empty latest value", function (done) {
-    nameSys.read().then((val) => {
-      expect(val).to.equal(null);
-      done();
-    });
+    nameSys
+      .read()
+      .catch((err) => console.error(err))
+      .then((val) => {
+        expect(val).to.equal(null);
+        done();
+      });
   });
 
   it("should be writable", async function () {
@@ -63,6 +69,7 @@ describe("Writer", async function () {
 
     const [val] = await once(nameSys.latest, "update");
     expect(val.text).to.equal(mockObjPub.text);
+    expect(val).to.have.property("signature");
   });
 
   it("should publish a second value and emit the same", async function () {
@@ -83,15 +90,48 @@ describe("Writer", async function () {
       });
       expect(totalEntries).to.equal(3);
 
-      nameSys.read().then((val) => {
-        expect(val).to.equal(mockObjPub2.text);
-        done();
-      });
+      nameSys
+        .read()
+        .catch((err) => console.error(err))
+        .then((val) => {
+          expect(val).to.equal(mockObjPub2.text);
+          done();
+        });
+    });
+  });
+
+  describe("Reader", function () {
+    var readerOnly = new HyPNS(
+      { publicKey: mockPublicKey },
+      { persist: false }
+    );
+
+    it("should be read only if only passed Public key and no private key", function (done) {
+      readerOnly.ready
+        .catch((err) => console.error(err))
+        .then(async () => {
+          expect(readerOnly.writable()).to.be.false;
+          // need to wait until peers are confirmed as conencted before read
+          this.timeout(1000);
+          var val;
+          try {
+            val = await readerOnly.read();
+            expect(val).to.equal(mockObjPub2.text);
+            done();
+          } catch (error) {
+            (error) => console.error(error);
+            done();
+          }
+        });
+    });
+
+    it("should ignore readonly publish command", function () {
+      expect(readerOnly.publish({ text: "foo" })).to.equal(null);
     });
   });
 });
 
-describe("Errors", async function () {
+describe("Errors", function () {
   it("should throw Err if no public key is passed", async function () {
     expect(() => {
       new HyPNS({}, { persist: false });
@@ -103,23 +143,12 @@ describe("Errors", async function () {
       { publicKey: mockPublicKey, secretKey: "foo" },
       { persist: false }
     );
-    badSecretKey.ready.then(() => {
-      expect(badSecretKey.writable()).to.be.false;
-      done();
-    });
-  });
-});
-
-describe("Reader", async function () {
-  it("should be read only if only passed Public key and no private key", function (done) {
-    var readerOnly = new HyPNS(
-      { publicKey: mockPublicKey },
-      { persist: false }
-    );
-    readerOnly.ready.then(() => {
-      expect(readerOnly.writable()).to.be.false;
-      done();
-    });
+    badSecretKey.ready
+      .catch((err) => console.error(err))
+      .then(() => {
+        expect(badSecretKey.writable()).to.be.false;
+        done();
+      });
   });
 });
 
@@ -127,13 +156,15 @@ describe("Storage", function () {
   it("should persist in tmp dir", function (done) {
     var persistH = new HyPNS(mockKeypair, { persist: true }); // pass in optional Corestore and networker
 
-    persistH.ready.then(async () => {
-      let mockOb = { text: "saved data " + new Date().toISOString() };
-      persistH.publish(mockOb);
-      const [val] = await once(persistH.latest, "update");
-      expect(val.text).to.equal(mockOb.text);
-      done();
-    });
+    persistH.ready
+      .catch((err) => console.error(err))
+      .then(async () => {
+        let mockOb = { text: "saved data " + new Date().toISOString() };
+        persistH.publish(mockOb);
+        const [val] = await once(persistH.latest, "update");
+        expect(val.text).to.equal(mockOb.text);
+        done();
+      });
   });
 });
 //process.exit(1);

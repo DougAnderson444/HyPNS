@@ -33,8 +33,11 @@ class HyPNS {
     this.core;
     this.multi;
     this.swarmNetworker;
-    this.publish;
-    this._storage = opts.persist === false || !opts.storage ? RAM : getNewStorage();
+    this.publish = () => {
+      return null;
+    };
+    this._storage =
+      opts.persist === false || !opts.storage ? RAM : getNewStorage();
     this.ready = this.open();
   }
 
@@ -45,7 +48,7 @@ class HyPNS {
 
       const swarmOpts = {};
       this.swarmNetworker = new SwarmNetworker(store, swarmOpts);
-      var network = new MultifeedNetworker(this.swarmNetworker); 
+      var network = new MultifeedNetworker(this.swarmNetworker);
 
       this.multi = new Multifeed(store, {
         rootKey: this._keypair.publicKey,
@@ -79,13 +82,40 @@ class HyPNS {
 
       // read
       this.core.use("pointer", timestampView);
-      this.core.api.pointer.tail(1, function (msgs) {
+      this.core.api.pointer.tail(1, (msgs) => {
         self.latest.emit("update", msgs[0].value);
       });
 
-      // if writable, wait for writeify to complete
-      if (this.writable()) await this.writeify();
-      resolve(true);
+      this.core.ready("pointer", () => {
+        // writer
+        // TODO: is a writer required for read only?
+        if (this.writable()) {
+          this.core.writer("kappa-local", (err, feed) => {
+            if (err) reject(err);
+
+            function pub(data) {
+              const timestamp = new Date().toISOString();
+              const signature = hcrypto.sign(
+                Buffer.from(data.text + " " + timestamp, "utf8"),
+                Buffer.from(self._keypair.secretKey, "hex") // has to be self._ so that .bind doesn't replace it with feed
+              );
+              let objPub = {
+                ...data,
+                signature: signature.toString("hex"),
+                timestamp,
+              };
+              this.append(objPub); // this gets bound to the object's kappa-local feed above
+              return objPub;
+            }
+
+            this.publish = pub.bind(feed); // bind feed to this in pub()
+
+            feed.ready(() => resolve(true));
+          });
+        } else {
+          resolve(true);
+        }
+      });
     });
   }
 
@@ -120,36 +150,6 @@ class HyPNS {
     );
   }
 
-  async writeify() {
-    return new Promise(async (resolve, reject) => {
-      var self = this;
-
-      // write
-      this.core.ready("pointer", () => {
-        self.core.writer("kappa-local", function (err, feed) {
-          if (err) reject(err);
-
-          function pub(data) {
-            const signature = hcrypto.sign(
-              Buffer.from(self._keypair.publicKey, "hex"),
-              Buffer.from(self._keypair.secretKey, "hex")
-            );
-            let objPub = {
-              ...data,
-              signature,
-              timestamp: new Date().toISOString(),
-            };
-            this.append(objPub); // this gets bound to the object's kappa-local feed above
-            return objPub;
-          }
-
-          self.publish = pub.bind(feed); // bind feed to this in pub()
-
-          feed.ready(() => resolve(true));
-        });
-      });
-    });
-  }
   get publicKey() {
     return this._keypair.publicKey.toString("hex");
   }
@@ -160,20 +160,33 @@ class HyPNS {
       limit: 1,
       reverse: true,
     });
-    return msgs && msgs.length > 0 && msgs[0].value && msgs[0].value.text
-      ? msgs[0].value.text
-      : null;
+
+    const valid =
+      msgs &&
+      msgs.length > 0 &&
+      msgs[0].value &&
+      msgs[0].value.text &&
+      this.verify(
+        msgs[0].value.text + " " + msgs[0].value.timestamp,
+        msgs[0].value.signature
+      );
+
+    return valid ? msgs[0].value.text : null;
+  }
+
+  verify(message, signature) {
+    // verify(message, signature, publicKey) // verify the signature of this value matches the public key under which it was published
+    return hcrypto.verify(
+      Buffer.from(message, "utf8"),
+      Buffer.from(signature, "hex"),
+      Buffer.from(this._keypair.publicKey, "hex")
+    );
   }
 }
 
 module.exports = HyPNS;
 
 function getNewStorage() {
-  if (isBrowser) {
-    return RAI("hypns"); // browser
-  } else {
-    return require("tmp").dirSync({
-      prefix: "hypns-",
-    }).name;
-  }
+  if (isBrowser) return RAI("hypns");
+  else return require("tmp").dirSync({ prefix: "hypns-" }).name;
 }
