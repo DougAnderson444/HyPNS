@@ -20,7 +20,7 @@ const sodium = require("sodium-universal");
 
 let isBrowser = process.title === "browser";
 
-class HyPNS {
+export default class HyPNS {
   constructor(keypair, opts) {
     if (
       !keypair.publicKey ||
@@ -183,8 +183,6 @@ class HyPNS {
     );
   }
 }
-
-module.exports = HyPNS;
 
 function getNewStorage() {
   if (isBrowser) return RAI("hypns");
