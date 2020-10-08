@@ -21,9 +21,6 @@
     "watch": "mochify --watch",
     "webdriver": "mochify --wd"
   },
-  "browserify": {
-    "transform": ["babelify --global"]
-  },
   "dependencies": {
     "@DougAnderson444/kappa-view-list": "github:DougAnderson444/kappa-view-list",
     "@DougAnderson444/random-access-idb": "github:DougAnderson444/random-access-idb",
