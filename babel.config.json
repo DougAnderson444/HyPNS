@@ -1,4 +1,15 @@
 {
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": {
+          "esmodules": true,
+          "node": "current"
+        }
+      }
+    ]
+  ],
   "plugins": [
     [
       "module-resolver",

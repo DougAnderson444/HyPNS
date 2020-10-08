@@ -1,8 +1,12 @@
 ![travis-ci-badge](https://travis-ci.com/DougAnderson444/HyPNS.svg?branch=main)
-[![codecov](https://codecov.io/gh/DougAnderson444/HyPNS/branch/main/graph/badge.svg?token=IQ3DGMTFKU)](undefined)
+[![codecov](https://codecov.io/gh/DougAnderson444/HyPNS/branch/main/graph/badge.svg?token=IQ3DGMTFKU)](https://codecov.io/gh/DougAnderson444/HyPNS)
 
 # HyPNS
 Hypercore-protocol + IPNS = HyPNS
+
+## Use
+
+`npm install --save https://github.com/DougAnderson444/HyPNS`
 
 ## What?
 
@@ -15,6 +19,18 @@ I thought when I published a value to IPNS that it stayed on the Distrubuted Has
 ## Solution
 
 Hypercore-protocol has built in replication (pinning by peers) so it works for my use case. I just needed to implement what I thought IPNS did using Hypercores. Hence, HyPNS (pronouced Hi-Pee-eN-eSS, or High-Pins... which do you think sounds better?)
+
+## Isomorphic
+
+This package is tested for both the browser (using Browserify) and Node. 
+
+If you want to use this is node, simply `import HyPNS from 'HyPNS'`
+
+If you want to use this in the browser, either
+
+- use the bundled code from `build:browserify`, or
+- use  `import HyPNS from 'HyPNS'` in your own code and `Browserify` yourself there
+- use a `HyPNS-Svelte-Component` in a Svelte project
 
 # API
 
