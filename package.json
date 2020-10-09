@@ -4,6 +4,7 @@
   "description": "Hybrid of Hyper-protocol and IPNS; a module to pin IPNS names using hyper-protocol",
   "main": "lib/index.js",
   "module": "es/index.js",
+  "type": "module",
   "files": [
     "lib",
     "es"
