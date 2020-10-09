@@ -2,3 +2,6 @@ node_modules
 coverage
 .nyc_output
 .env
+debug.log
+hypns-bundle.js
+svelte-bundle.js

@@ -1,13 +1,15 @@
 {
   "name": "hypns",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Hybrid of Hyper-protocol and IPNS; a module to pin IPNS names using hyper-protocol",
   "main": "src/index.js",
   "scripts": {
-    "build:browserify": "browserify -t [ babelify --global --ignore [ test ] ] --standalone hypns src/index.js > hypns-bundle.js",
+    "build:browserify": "browserify -t [ babelify --global --ignore [ test ] ] --standalone hypns src/index.js > demo/hypns-bundle.js",
     "build:commonjs": "cross-env BABEL_ENV=commonjs babel src -d lib --ignore \"**/test\" --delete-dir-on-start",
     "build:es": "cross-env BABEL_ENV=es babel src -d es --ignore \"**/test\" --delete-dir-on-start",
     "build": "npm run build:commonjs && npm run build:es",
+    "build-demo": "browserify -t [ babelify --global ] -t [ sveltify --svelte [ --hydratable=true ] ] demo/demo.js > demo/svelte-bundle.js && start demo/index.html",
+    "demo-build-all": "npm run build:browserify && npm run build-demo",
     "test": "npm run test-browser && npm run test-node",
     "test-browser": "mochify --chrome --transform [ babelify --global --ignore [ test ] ] ",
     "test-node": "cross-env NODE_ENV=test nyc mocha --exit",
@@ -47,6 +49,7 @@
     "mocha": "^8.1.3",
     "mochify": "^6.6.0",
     "nyc": "^15.1.0",
+    "sveltify": "^3.0.0",
     "util": "^0.12.3"
   },
   "repository": {
