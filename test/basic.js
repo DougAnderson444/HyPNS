@@ -27,144 +27,137 @@ const mockObjPub2 = {
   nickname: "cat-lover",
 };
 
-describe("Writer", async function () {
-  const opts = { persist: false };
-  var nameSys = new HyPNS(mockKeypair, opts); // pass in optional Corestore and networker
-
+describe("Persist: false", async function () {
+  var myNode = new HyPNS({ persist: false }); // pass in optional Corestore and networker
+  var instance;
+  var readerOnly;
   before(async function () {
     // runs once before the first test in this block
-    await nameSys.ready;
+    instance = await myNode.open({ keypair: mockKeypair });
+    readerOnly = await myNode.open({ keypair: { publicKey: mockPublicKey } });
   });
 
   after(function (done) {
     // runs once after the last test in this block
     this.timeout(30000); // takes time to close all the connections
-    nameSys
+    myNode
       .close()
       .catch((err) => console.error(err))
       .then(done);
   });
+  describe("Writer", async function () {
+    it("should create a HyPNS instance", async function () {
+      expect(instance.publicKey).to.equal(mockPublicKey);
+    });
 
-  it("should create a HyPNS instance", async function () {
-    expect(nameSys.publicKey).to.equal(mockPublicKey);
-  });
-
-  it("should start with empty latest value", function (done) {
-    nameSys
-      .read()
-      .catch((err) => console.error(err))
-      .then((val) => {
-        expect(val).to.equal(null);
-        done();
-      });
-  });
-
-  it("should be writable", async function () {
-    expect(nameSys.writable()).to.be.true;
-  });
-
-  it("should publish and emit the same", async function () {
-    const retVal = nameSys.publish(mockObjPub);
-    expect(retVal.text).to.equal(mockObjPub.text);
-
-    const [val] = await once(nameSys.latest, "update");
-    expect(val.text).to.equal(mockObjPub.text);
-    expect(val).to.have.property("signature");
-  });
-
-  it("should publish a second value and emit the same", async function () {
-    const retVal = nameSys.publish(mockObjPub2);
-    const [val] = await once(nameSys.latest, "update");
-    expect(retVal.text).to.equal(mockObjPub2.text);
-    expect(val.text).to.equal(mockObjPub2.text);
-  });
-
-  it("should ignore entries without a timestamp", function (done) {
-    expect(nameSys.core.feeds().length).to.equal(1);
-    // saved from another library to this publicKey
-    helper.anotherWriter(nameSys.core, async () => {
-      expect(nameSys.core.feeds().length).to.equal(2);
-      var totalEntries = 0;
-      nameSys.core.feeds().forEach((f) => {
-        totalEntries += f.length;
-      });
-      expect(totalEntries).to.equal(3);
-
-      nameSys
-        .read()
+    it("should start with empty latest value", function (done) {
+      instance
+        .readLatest()
         .catch((err) => console.error(err))
         .then((val) => {
-          expect(val).to.equal(mockObjPub2.text);
+          expect(val).to.equal(null);
           done();
         });
     });
-  });
 
-  describe("Reader", function () {
-    var readerOnly = new HyPNS(
-      { publicKey: mockPublicKey },
-      { persist: false }
-    );
+    it("should be writeEnabled", async function () {
+      expect(instance.writeEnabled()).to.be.true;
+    });
 
-    it("should be read only if only passed Public key and no private key", function (done) {
-      readerOnly.ready
-        .catch((err) => console.error(err))
-        .then(async () => {
-          expect(readerOnly.writable()).to.be.false;
-          // need to wait until peers are confirmed as conencted before read
-          this.timeout(1000);
-          var val;
-          try {
-            val = await readerOnly.read();
+    it("should publish and emit the same", async function () {
+      const retVal = instance.publish(mockObjPub);
+      expect(retVal.text).to.equal(mockObjPub.text);
+
+      const [val] = await once(instance.beacon, "update");
+      expect(val.text).to.equal(mockObjPub.text);
+      expect(val).to.have.property("signature");
+    });
+
+    it("should publish a second value and emit the same", async function () {
+      const retVal = instance.publish(mockObjPub2);
+      const [val] = await once(instance.beacon, "update");
+      expect(retVal.text).to.equal(mockObjPub2.text);
+      expect(val.text).to.equal(mockObjPub2.text);
+    });
+
+    it("should ignore entries without a timestamp", function (done) {
+      expect(instance.core.feeds().length).to.equal(1);
+      // saved from another library to this publicKey
+      helper.anotherWriter(instance.core, async () => {
+        expect(instance.core.feeds().length).to.equal(2);
+        var totalEntries = 0;
+        instance.core.feeds().forEach((f) => {
+          totalEntries += f.length;
+        });
+        expect(totalEntries).to.equal(3);
+
+        instance
+          .readLatest()
+          .catch((err) => console.error(err))
+          .then((val) => {
             expect(val).to.equal(mockObjPub2.text);
             done();
-          } catch (error) {
-            (error) => console.error(error);
-            done();
-          }
-        });
+          });
+      });
+    });
+  });
+
+  describe("Reader", async function () {
+    it("should be read only if only passed Public key and no private key", async function () {
+      expect(readerOnly.writeEnabled()).to.be.false;
+      // need to wait until peers are confirmed as conencted before read
+      this.timeout(1000);
+      try {
+        var val = await readerOnly.readLatest();
+        expect(val).to.equal(mockObjPub2.text);
+      } catch (error) {
+        (error) => console.error(error);
+      }
     });
 
     it("should ignore readonly publish command", function () {
       expect(readerOnly.publish({ text: "foo" })).to.equal(null);
     });
   });
-});
 
-describe("Errors", function () {
-  it("should throw Err if no public key is passed", async function () {
-    expect(() => {
-      new HyPNS({}, { persist: false });
-    }).to.throw();
+  it("should create new key if no public key is passed", async function () {
+    const keyGen = await myNode.open();
+    expect(keyGen).to.have.property("publicKey");
   });
 
-  it("should not be writable if bad secret key is passed", function (done) {
-    var badSecretKey = new HyPNS(
-      { publicKey: mockPublicKey, secretKey: "foo" },
-      { persist: false }
-    );
-    badSecretKey.ready
-      .catch((err) => console.error(err))
-      .then(() => {
-        expect(badSecretKey.writable()).to.be.false;
-        done();
-      });
+  it("should not be writeEnabled if bad secret key is passed", async function () {
+    var badSecretKey = await myNode.open({
+      keypair: { publicKey: mockPublicKey, secretKey: "foo" },
+    });
+
+    expect(badSecretKey.writeEnabled()).to.be.false;
   });
 });
 
-describe("Storage", function () {
-  it("should persist in tmp dir", function (done) {
-    var persistH = new HyPNS(mockKeypair, { persist: true }); // pass in optional Corestore and networker
+describe("Persist:true", function () {
 
-    persistH.ready
+  var persistNode = new HyPNS({ persist: false }); // pass in optional Corestore and networker
+  var persistH;
+  before(async function () {
+    // runs once before the first test in this block
+    persistH = await persistNode.open({ keypair: mockKeypair });
+  });
+
+  after(function (done) {
+    // runs once after the last test in this block
+    this.timeout(30000); // takes time to close all the connections
+    persistNode
+      .close()
       .catch((err) => console.error(err))
-      .then(async () => {
-        let mockOb = { text: "saved data " + new Date().toISOString() };
-        persistH.publish(mockOb);
-        const [val] = await once(persistH.latest, "update");
-        expect(val.text).to.equal(mockOb.text);
-        done();
-      });
+      .then(done);
+  });
+
+  it("should persist on disk", async function () {
+    let mockOb = { text: "saved data " + new Date().toISOString() };
+    persistH.publish(mockOb);
+    this.timeout(5000);
+    const [val] = await once(persistH.beacon, "update");
+    expect(val.text).to.equal(mockOb.text);
   });
 });
 //process.exit(1);

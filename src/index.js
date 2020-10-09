@@ -21,56 +21,87 @@ const sodium = require("sodium-universal");
 let isBrowser = process.title === "browser";
 
 class HyPNS {
-  constructor(keypair, opts) {
+  constructor(opts) {
+    this._storage =
+      opts.persist === false || !opts.storage ? RAM : getNewStorage();
+    this.store = new Corestore(this._storage);
+    this.swarmNetworker = new SwarmNetworker(this.store);
+    this.network = new MultifeedNetworker(this.swarmNetworker);
+
+    // handle shutdown gracefully
+    const closeHandler = async () => {
+      console.log("Shutting down...");
+      await this.close();
+      process.exit();
+    };
+
+    process.on("SIGINT", closeHandler);
+    process.on("SIGTERM", closeHandler);
+  }
+
+  async open(opts) {
+    const instance = new HyPNSInstance({ ...opts, ...this });
+    await instance.ready;
+    return instance;
+  }
+  async close() {
+    this.store.close()
+    await this.swarmNetworker.close(); //Shut down the swarm networker.
+  }
+}
+
+class HyPNSInstance {
+  constructor(opts) {
     if (
-      !keypair.publicKey ||
-      Buffer.byteLength(keypair.publicKey, "hex") !==
+      !opts.keypair ||
+      !opts.keypair.publicKey ||
+      !opts.keypair.publicKey === null ||
+      Buffer.byteLength(opts.keypair.publicKey, "hex") !==
         sodium.crypto_sign_PUBLICKEYBYTES
-    )
-      throw new Error("Must include a publicKey");
-    this._keypair = keypair;
-    this.latest = new EventEmitter();
-    this.core;
+    ) {
+      // make new keypair for them
+      opts.keypair = hcrypto.keyPair();
+    }
+    this._keypair = opts.keypair;
+    this.store = opts.store;
+    this.network = opts.network;
+    this.beacon = new EventEmitter();
     this.multi;
-    this.swarmNetworker;
+    this.core;
+    this.latest;
+    this.writable;
     this.publish = () => {
       return null;
     };
-    this._storage =
-      opts.persist === false || !opts.storage ? RAM : getNewStorage();
+
     this.ready = this.open();
   }
 
   async open() {
     return new Promise(async (resolve, reject) => {
       var self = this;
-      const store = new Corestore(this._storage);
 
-      const swarmOpts = {};
-      this.swarmNetworker = new SwarmNetworker(store, swarmOpts);
-      var network = new MultifeedNetworker(this.swarmNetworker);
-
-      this.multi = new Multifeed(store, {
+      this.multi = new Multifeed(this.store, {
         rootKey: this._keypair.publicKey,
         valueEncoding: "json",
       });
-      network.swarm(this.multi);
-
-      // handle shutdown gracefully
-      const closeHandler = async () => {
-        console.log("Shutting down...");
-        await this.close();
-        process.exit();
-      };
-
-      process.on("SIGINT", closeHandler);
-      process.on("SIGTERM", closeHandler);
+      this.network.swarm(this.multi);
 
       /**
        * KAPPA VIEWS of the multifeed
        */
-      var timestampView = list(memdb(), function (msg, next) {
-        if (msg.value.timestamp && typeof msg.value.timestamp === "string") {
+      var timestampView = list(memdb(), (msg, next) => {
+        // only index those msg with valid signature
+        const valid =
+          msg.value &&
+          msg.value.text &&
+          msg.value.timestamp &&
+          typeof msg.value.timestamp === "string" &&
+          this.verify(
+            msg.value.text + " " + msg.value.timestamp,
+            msg.value.signature
+          );
+        if (valid) {
           // sort on the 'timestamp' field
           next(null, [msg.value.timestamp]);
         } else {
@@ -78,18 +109,18 @@ class HyPNS {
         }
       });
 
-      this.core = kappa(store, { multifeed: this.multi }); // store not used since we pass in a multifeed
+      this.core = kappa(this.store, { multifeed: this.multi }); // store not used since we pass in a multifeed
 
       // read
       this.core.use("pointer", timestampView);
       this.core.api.pointer.tail(1, (msgs) => {
-        self.latest.emit("update", msgs[0].value);
+        this.latest = msgs[0].value;
+        this.beacon.emit("update", msgs[0].value);
       });
 
       this.core.ready("pointer", () => {
-        // writer
-        // TODO: is a writer required for read only?
-        if (this.writable()) {
+        if (this.writeEnabled()) {
+          // writer
           this.core.writer("kappa-local", (err, feed) => {
             if (err) reject(err);
 
@@ -120,11 +151,10 @@ class HyPNS {
   }
 
   async close() {
-    this.multi.close();
-    await this.swarmNetworker.close(); //Shut down the swarm networker.
+    this.multi.close(); // closes individual multifeed
   }
 
-  writable() {
+  writeEnabled() {
     if (!this._keypair.secretKey) return false;
     if (
       Buffer.byteLength(this._keypair.secretKey, "hex") !==
@@ -154,24 +184,16 @@ class HyPNS {
     return this._keypair.publicKey.toString("hex");
   }
 
-  async read() {
+  async readLatest() {
     // get the last saved entry
     const msgs = await pify(this.core.api.pointer.read)({
       limit: 1,
       reverse: true,
     });
 
-    const valid =
-      msgs &&
-      msgs.length > 0 &&
-      msgs[0].value &&
-      msgs[0].value.text &&
-      this.verify(
-        msgs[0].value.text + " " + msgs[0].value.timestamp,
-        msgs[0].value.signature
-      );
-
-    return valid ? msgs[0].value.text : null;
+    return msgs && msgs.length > 0 && msgs[0].value && msgs[0].value.text
+      ? msgs[0].value.text
+      : null;
   }
 
   verify(message, signature) {
