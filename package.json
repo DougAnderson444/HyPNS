@@ -21,6 +21,7 @@
   "dependencies": {
     "@DougAnderson444/kappa-view-list": "github:DougAnderson444/kappa-view-list",
     "@DougAnderson444/random-access-idb": "github:DougAnderson444/random-access-idb",
+    "@DougAnderson444/corestore": "DougAnderson444/corestore#max-emitters-test-and-troubleshooting",
     "@corestore/networker": "^1.0.3",
     "chai-as-promised": "^7.1.1",
     "corestore": "^5.7.3",
