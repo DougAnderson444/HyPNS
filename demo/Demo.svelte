@@ -1,6 +1,5 @@
 <script>
   import { onMount, onDestroy } from "svelte";
-  export let name;
 
   var myNode;
 
