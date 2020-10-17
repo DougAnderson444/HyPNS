@@ -32,16 +32,20 @@ const mockObjPub2 = {
 process.on('warning', (warning) => {
   // console.warn(warning.name);    // Print the warning name
   // console.warn(warning.message); // Print the warning message
-  console.warn(warning.stack) // Print the stack trace
+  // console.warn(warning.stack) // Print the stack trace
 })
 
 describe('Persist: false', async function () {
   var myNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
+  var peerNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
+
   var instance
+  var secondInstance
   var readerOnly
   before(async function () {
     // runs once before the first test in this block
     instance = await myNode.open({ keypair: mockKeypair })
+    secondInstance = await peerNode.open({ keypair: { publicKey: instance.publicKey } })
     readerOnly = await myNode.open({ keypair: { publicKey: mockPublicKey } })
   })
 
@@ -57,7 +61,13 @@ describe('Persist: false', async function () {
     myNode
       .close()
       .catch((err) => console.error(err))
-      .then(done)
+      .then(() => {
+        this.timeout(30000) // takes time to close all the connections
+        peerNode
+          .close()
+          .catch((err) => console.error(err))
+          .then(done)
+      })
   })
   describe('Writer', async function () {
     it('should create a HyPNS instance', async function () {
@@ -87,11 +97,13 @@ describe('Persist: false', async function () {
       expect(val).to.have.property('signature')
     })
 
-    it('should publish a second value and emit the same', async function () {
+    it('should publish a second value and emit the same local and remote', async function () {
       const retVal = instance.publish(mockObjPub2)
       const [val] = await once(instance.beacon, 'update')
+      const [val2] = await once(secondInstance.beacon, 'update')
       expect(retVal.text).to.equal(mockObjPub2.text)
       expect(val.text).to.equal(mockObjPub2.text)
+      expect(val2.text).to.equal(mockObjPub2.text)
     })
 
     it('should ignore entries without a timestamp', function (done) {
