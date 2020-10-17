@@ -66,7 +66,7 @@ describe('Persist: false', async function () {
         peerNode
           .close()
           .catch((err) => console.error(err))
-          .then(done)
+          .then(done())
       })
   })
   describe('Writer', async function () {
