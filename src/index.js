@@ -26,8 +26,8 @@ class HyPNS {
     this._storage =
       opts.persist === false || !opts.storage ? RAM : getNewStorage()
     this.store = new Corestore(this._storage)
-    this.swarmNetworker = new SwarmNetworker(this.store)
-    this.network = new MultifeedNetworker(this.swarmNetworker)
+    this.swarmNetworker
+    this.network
 
     // handle shutdown gracefully
     const closeHandler = async () => {
@@ -41,14 +41,18 @@ class HyPNS {
   }
 
   async open (opts) {
-    const instance = new HyPNSInstance({ ...opts, ...this })
+    await this.store.ready()
+    if (!this.swarmNetworker) this.swarmNetworker = new SwarmNetworker(this.store)
+    if (!this.network) this.network = new MultifeedNetworker(this.swarmNetworker)
+    const instance = new HyPNSInstance({ ...opts, ...this }) // TODO: Keep track of these to close them all? Does it matter?
     await instance.ready
     return instance
   }
 
   async close () {
+    // TODO: Close all instances too
     this.store.close()
-    await this.swarmNetworker.close() // Shut down the swarm networker.
+    if (this.swarmNetworker) await this.swarmNetworker.close() // Shut down the swarm networker.
   }
 }
 
@@ -114,46 +118,49 @@ class HyPNSInstance {
         }
       })
 
-      this.core = kappa(this.store, { multifeed: this.multi }) // store not used since we pass in a multifeed
+      this.multi.ready((err) => {
+        if (err) throw Error('Multifeed not ready')
+        this.core = kappa(this.store, { multifeed: this.multi }) // store not used since we pass in a multifeed
 
-      // read
-      this.core.use('pointer', timestampView)
-      this.core.api.pointer.tail(1, (msgs) => {
-        this.latest = msgs[0].value
-        this.beacon.emit('update', msgs[0].value)
-      })
+        // read
+        this.core.use('pointer', timestampView)
+        this.core.api.pointer.tail(1, (msgs) => {
+          this.latest = msgs[0].value
+          this.beacon.emit('update', msgs[0].value)
+        })
 
-      this.core.ready('pointer', () => {
-        if (this.writeEnabled()) {
+        this.core.ready('pointer', () => {
+          if (this.writeEnabled()) {
           // writer
-          this.core.writer('kappa-local', (err, feed) => {
-            if (err) reject(err)
+            this.core.writer('kappa-local', (err, feed) => {
+              if (err) reject(err)
 
-            function pub (data) {
-              const timestamp = new Date().toISOString()
-              const signature = hcrypto.sign(
-                Buffer.from(data.text + ' ' + timestamp, 'utf8'),
-                Buffer.from(self._keypair.secretKey, 'hex') // has to be self._ so that .bind doesn't replace it with feed
-              )
-              const objPub = {
-                ...data,
-                signature: signature.toString('hex'),
-                timestamp
+              function pub (data) {
+                const timestamp = new Date().toISOString()
+                const signature = hcrypto.sign(
+                  Buffer.from(data.text + ' ' + timestamp, 'utf8'),
+                  Buffer.from(self._keypair.secretKey, 'hex') // has to be self._ so that .bind doesn't replace it with feed
+                )
+                const objPub = {
+                  ...data,
+                  signature: signature.toString('hex'),
+                  timestamp
+                }
+                this.append(objPub) // this gets bound to the object's kappa-local feed above
+                return objPub
               }
-              this.append(objPub) // this gets bound to the object's kappa-local feed above
-              return objPub
-            }
 
-            this.publish = pub.bind(feed) // bind feed to this in pub()
+              this.publish = pub.bind(feed) // bind feed to this in pub()
 
-            feed.ready(() => {
-              this.writable = true
-              resolve(true)
+              feed.ready(() => {
+                this.writable = true
+                resolve(feed)
+              })
             })
-          })
-        } else {
-          resolve(true)
-        }
+          } else {
+            resolve(this.core)
+          }
+        })
       })
     })
   }
