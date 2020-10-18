@@ -13,11 +13,13 @@ var RAM = require('random-access-memory')
 const RAI = require('@DougAnderson444/random-access-idb')
 
 const pify = require('pify') // promisify
-var EventEmitter = require('events').EventEmitter
+// var EventEmitter = require('events').EventEmitter
 // const once = require('events.once') // polyfill for nodejs events.once in the browser
 
 const hcrypto = require('hypercore-crypto')
 const sodium = require('sodium-universal')
+
+const EventEmitter = require('events')
 
 const isBrowser = process.title === 'browser'
 
@@ -44,9 +46,7 @@ class HyPNS {
     await this.store.ready()
     if (!this.swarmNetworker) this.swarmNetworker = new SwarmNetworker(this.store)
     if (!this.network) this.network = new MultifeedNetworker(this.swarmNetworker)
-    const instance = new HyPNSInstance({ ...opts, ...this }) // TODO: Keep track of these to close them all? Does it matter?
-    await instance.ready
-    return instance
+    return new HyPNSInstance({ ...opts, ...this }) // TODO: Keep track of these to close them all? Does it matter?
   }
 
   async close () {
@@ -56,8 +56,9 @@ class HyPNS {
   }
 }
 
-class HyPNSInstance {
+class HyPNSInstance extends EventEmitter {
   constructor (opts) {
+    super()
     if (
       !opts.keypair ||
       !opts.keypair.publicKey ||
@@ -73,7 +74,7 @@ class HyPNSInstance {
     // this.publicKey = this._keypair.publicKey.toString('hex')
     this.store = opts.store
     this.network = opts.network
-    this.beacon = new EventEmitter()
+    // this.beacon = new EventEmitter()
     // eslint-disable-next-line no-unused-expressions
     this.multi
     this.core
@@ -82,11 +83,9 @@ class HyPNSInstance {
     this.publish = () => {
       return null
     }
-
-    this.ready = this.open()
   }
 
-  async open () {
+  async ready () {
     return new Promise((resolve, reject) => {
       var self = this
 
@@ -126,7 +125,8 @@ class HyPNSInstance {
         this.core.use('pointer', timestampView)
         this.core.api.pointer.tail(1, (msgs) => {
           this.latest = msgs[0].value
-          this.beacon.emit('update', msgs[0].value)
+          this.emit('update', msgs[0].value)
+          // this.beacon.emit('update', msgs[0].value)
         })
 
         this.core.ready('pointer', () => {
