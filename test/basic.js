@@ -35,29 +35,29 @@ process.on('warning', (warning) => {
   // console.warn(warning.stack) // Print the stack trace
 })
 
-describe('Persist: false', async function () {
-  var myNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
-  var peerNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
+var myNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
+var peerNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
 
-  var instance
-  var secondInstance
-  var readerOnly
+var instance
+var secondInstance
+var readerOnly
+
+describe('Tests', async function () {
   before(async function () {
     // runs once before the first test in this block
     instance = await myNode.open({ keypair: mockKeypair })
-    secondInstance = await peerNode.open({ keypair: { publicKey: instance.publicKey } })
-    readerOnly = await myNode.open({ keypair: { publicKey: mockPublicKey } })
-  })
+    await instance.ready()
 
-  afterEach(function () {
-    // runs after each test in this block
-    // console.log('myNode corestore contents',myNode.store.list())
-    // console.log('myNode', myNode.store)
+    secondInstance = await peerNode.open({ keypair: { publicKey: instance.publicKey } })
+    await secondInstance.ready()
+
+    readerOnly = await myNode.open({ keypair: { publicKey: mockPublicKey } })
+    await readerOnly.ready()
   })
 
   after(function (done) {
     // runs once after the last test in this block
-    this.timeout(30000) // takes time to close all the connections
+    this.timeout(20000) // takes time to close all the connections
     myNode
       .close()
       .catch((err) => console.error(err))
@@ -69,85 +69,82 @@ describe('Persist: false', async function () {
           .then(done())
       })
   })
-  describe('Writer', async function () {
-    it('should create a HyPNS instance', async function () {
-      expect(instance.publicKey).to.equal(mockPublicKey)
-    })
 
-    it('should start with empty latest value', function (done) {
-      instance
-        .readLatest()
-        .catch((err) => console.error(err))
-        .then((val) => {
-          expect(val).to.equal(null)
-          done()
-        })
-    })
+  it('should create a HyPNS instance', async function () {
+    expect(instance.publicKey).to.equal(mockPublicKey)
+  })
 
-    it('should be writeEnabled', function () {
-      expect(instance.writeEnabled()).to.be.true
-    })
-
-    it('should publish and emit the same', async function () {
-      const retVal = instance.publish(mockObjPub)
-      expect(retVal.text).to.equal(mockObjPub.text)
-
-      const [val] = await once(instance.beacon, 'update')
-      expect(val.text).to.equal(mockObjPub.text)
-      expect(val).to.have.property('signature')
-    })
-
-    it('should publish a second value and emit the same local and remote', async function () {
-      const retVal = instance.publish(mockObjPub2)
-      const [val] = await once(instance.beacon, 'update')
-      const [val2] = await once(secondInstance.beacon, 'update')
-      expect(retVal.text).to.equal(mockObjPub2.text)
-      expect(val.text).to.equal(mockObjPub2.text)
-      expect(val2.text).to.equal(mockObjPub2.text)
-    })
-
-    it('should ignore entries without a timestamp', function (done) {
-      expect(instance.core.feeds().length).to.equal(1)
-      // saved from another library to this publicKey
-      helper.anotherWriter(instance.core, async () => {
-        expect(instance.core.feeds().length).to.equal(2)
-        var totalEntries = 0
-        instance.core.feeds().forEach((f) => {
-          totalEntries += f.length
-        })
-        expect(totalEntries).to.equal(3)
-
-        instance
-          .readLatest()
-          .catch((err) => console.error(err))
-          .then((val) => {
-            expect(val).to.equal(mockObjPub2.text)
-            done()
-          })
+  it('should start with empty latest value', function (done) {
+    instance
+      .readLatest()
+      .catch((err) => console.error(err))
+      .then((val) => {
+        expect(val).to.equal(null)
+        done()
       })
+  })
+
+  it('should be writeEnabled', function () {
+    expect(instance.writeEnabled()).to.be.true
+  })
+
+  it('should publish and emit the same', async function () {
+    const retVal = instance.publish(mockObjPub)
+    expect(retVal.text).to.equal(mockObjPub.text)
+
+    const [val] = await once(instance, 'update')
+    expect(val.text).to.equal(mockObjPub.text)
+    expect(val).to.have.property('signature')
+  })
+
+  it('should publish a second value and emit the same local and remote', async function () {
+    process.nextTick(() => {
+      const retVal = instance.publish(mockObjPub2)
+      expect(retVal.text).to.equal(mockObjPub2.text)
+    })
+    try {
+      this.timeout(5000)
+      // const [vals] = await Promise.all([once(instance, 'update'), once(secondInstance, 'update')])
+      const [val] = await once(secondInstance, 'update')
+      expect(val.text).to.equal(mockObjPub2.text)
+    } catch (error) {
+      console.error(error)
+    }
+    peerNode.close()
+  })
+
+  it('should ignore entries without a timestamp, be same as last test publish()', function (done) {
+    // saved from another library to this publicKey
+    helper.anotherWriter(instance.core, () => {
+      var totalEntries = 0
+      instance.core.feeds().forEach((f) => {
+        totalEntries += f.length
+      })
+      expect(totalEntries).to.equal(3)
+      expect(instance.latest.text).to.equal(mockObjPub2.text)
+      done()
     })
   })
 
-  describe('Reader', async function () {
-    it('should be read only if only passed Public key and no private key', async function () {
-      expect(readerOnly.writeEnabled()).to.be.false
-      // need to wait until peers are confirmed as conencted before read
-      this.timeout(1000)
-      try {
-        var val = await readerOnly.readLatest()
-        expect(val).to.equal(mockObjPub2.text)
-      } catch (error) {
-        (error) => console.error(error)
-      }
-    })
+  it('should be read only if only passed Public key and no private key', async function () {
+    expect(readerOnly.writeEnabled()).to.be.false
+    // need to wait until peers are confirmed as conencted before read
+    this.timeout(1000)
+    try {
+      var val = await readerOnly.readLatest()
+      expect(val).to.equal(mockObjPub2.text)
+    } catch (error) {
+      (error) => console.error(error)
+    }
+  })
 
-    it('should ignore readonly publish command', function () {
-      expect(readerOnly.publish({ text: 'foo' })).to.equal(null)
-    })
+  it('should ignore readonly publish command', function () {
+    expect(readerOnly.publish({ text: 'foo' })).to.equal(null)
   })
 
   it('should create new key if no public key is passed', async function () {
     const keyGen = await myNode.open()
+    await keyGen.ready()
     // console.log('keyGen', keyGen.store)
 
     expect(keyGen).to.have.property('publicKey')
@@ -157,35 +154,31 @@ describe('Persist: false', async function () {
     var badSecretKey = await myNode.open({
       keypair: { publicKey: mockPublicKey, secretKey: 'foo' }
     })
-    // console.log('badSecretKey', badSecretKey.store)
+    await badSecretKey.ready()
 
     expect(badSecretKey.writeEnabled()).to.be.false
   })
 })
-
 describe('Persist:true', function () {
-  var persistNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
+  var persistNode = new HyPNS({ persist: true }) // pass in optional Corestore and networker
   var persistH
   before(async function () {
     // runs once before the first test in this block
     persistH = await persistNode.open({ keypair: mockKeypair })
-    // console.log('persistH', persistH.store)
+    await persistH.ready()
   })
 
   after(function (done) {
     // runs once after the last test in this block
     this.timeout(30000) // takes time to close all the connections
-    persistNode
-      .close()
-      .catch((err) => console.error(err))
-      .then(done)
+    persistNode.close()
   })
 
   it('should persist on disk', async function () {
     const mockOb = { text: 'saved data ' + new Date().toISOString() }
     persistH.publish(mockOb)
-    this.timeout(5000)
-    const [val] = await once(persistH.beacon, 'update')
+    this.timeout(3000)
+    const [val] = await once(persistH, 'update')
     expect(val.text).to.equal(mockOb.text)
   })
 })
