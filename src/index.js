@@ -80,9 +80,7 @@ class HyPNSInstance extends EventEmitter {
     this.core
     this.latest
     this.writable
-    this.publish = () => {
-      return null
-    }
+    this.publish
   }
 
   async ready () {

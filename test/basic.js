@@ -98,6 +98,7 @@ describe('Tests', async function () {
     process.nextTick(() => {
       instance.publish(mockObjPub2)
     })
+    this.timeout(5000) // sometimes this takes more than 2 seconds in the browser tests
     const [val] = await once(secondInstance, 'update')
     expect(val.text).to.equal(mockObjPub2.text)
   })
@@ -128,7 +129,7 @@ describe('Tests', async function () {
   })
 
   it('should ignore readonly publish command', function () {
-    expect(readerOnly.publish({ text: 'foo' })).to.equal(null)
+    expect(() => readerOnly.publish({ text: 'foo' })).to.throw(TypeError, /not a function/)
   })
 
   it('should create new key if no public key is passed', async function () {
