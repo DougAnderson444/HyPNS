@@ -1,13 +1,14 @@
 /* eslint-disable no-unused-expressions */
 /* eslint-disable no-undef */
+// import once from 'events.once'
+const once = require('events.once') // polyfill for nodejs events.once in the browser
+
 const chai = require('chai')
 var chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
 var expect = chai.expect
 
 const HyPNS = require('../src')
-const once = require('events.once') // polyfill for nodejs events.once in the browser
-
 const helper = require('./lib')
 
 const mockPublicKey =
@@ -58,16 +59,9 @@ describe('Tests', async function () {
   after(function (done) {
     // runs once after the last test in this block
     this.timeout(20000) // takes time to close all the connections
-    myNode
-      .close()
-      .catch((err) => console.error(err))
-      .then(() => {
-        this.timeout(30000) // takes time to close all the connections
-        peerNode
-          .close()
-          .catch((err) => console.error(err))
-          .then(done())
-      })
+    myNode.close()
+      .then(peerNode.close().then(done))
+      .catch(err => console.error(err))
   })
 
   it('should create a HyPNS instance', async function () {
@@ -97,20 +91,15 @@ describe('Tests', async function () {
     expect(val).to.have.property('signature')
   })
 
-  it('should publish a second value and emit the same local and remote', async function () {
+  it('should publish a second value and emit to remote', async function () {
+    // secondInstance.once('update', (val) => {
+    //   expect(val.text).to.equal(mockObjPub2.text)
+    // })
     process.nextTick(() => {
-      const retVal = instance.publish(mockObjPub2)
-      expect(retVal.text).to.equal(mockObjPub2.text)
+      instance.publish(mockObjPub2)
     })
-    try {
-      this.timeout(5000)
-      // const [vals] = await Promise.all([once(instance, 'update'), once(secondInstance, 'update')])
-      const [val] = await once(secondInstance, 'update')
-      expect(val.text).to.equal(mockObjPub2.text)
-    } catch (error) {
-      console.error(error)
-    }
-    peerNode.close()
+    const [val] = await once(secondInstance, 'update')
+    expect(val.text).to.equal(mockObjPub2.text)
   })
 
   it('should ignore entries without a timestamp, be same as last test publish()', function (done) {
@@ -145,8 +134,6 @@ describe('Tests', async function () {
   it('should create new key if no public key is passed', async function () {
     const keyGen = await myNode.open()
     await keyGen.ready()
-    // console.log('keyGen', keyGen.store)
-
     expect(keyGen).to.have.property('publicKey')
   })
 
@@ -170,10 +157,12 @@ describe('Persist:true', function () {
 
   after(function (done) {
     // runs once after the last test in this block
-    this.timeout(30000) // takes time to close all the connections
-    persistNode.close()
+    this.timeout(20000) // takes time to close all the connections
+    persistNode
+      .close()
+      .then(done)
+      .catch((err) => console.error(err))
   })
-
   it('should persist on disk', async function () {
     const mockOb = { text: 'saved data ' + new Date().toISOString() }
     persistH.publish(mockOb)
