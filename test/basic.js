@@ -68,14 +68,8 @@ describe('Tests', async function () {
     expect(instance.publicKey).to.equal(mockPublicKey)
   })
 
-  it('should start with empty latest value', function (done) {
-    instance
-      .readLatest()
-      .catch((err) => console.error(err))
-      .then((val) => {
-        expect(val).to.equal(null)
-        done()
-      })
+  it('should start with empty latest value', function () {
+    expect(instance.latest).to.equal(null)
   })
 
   it('should be writeEnabled', function () {
@@ -92,13 +86,13 @@ describe('Tests', async function () {
   })
 
   it('should publish a second value and emit to remote', async function () {
-    // secondInstance.once('update', (val) => {
-    //   expect(val.text).to.equal(mockObjPub2.text)
-    // })
+    secondInstance.once('update', (val) => {
+      expect(val.text).to.equal(mockObjPub2.text)
+    })
     process.nextTick(() => {
       instance.publish(mockObjPub2)
     })
-    this.timeout(5000) // sometimes this takes more than 2 seconds in the browser tests
+    this.timeout(8000) // sometimes this takes more than 2 seconds in the browser tests
     const [val] = await once(secondInstance, 'update')
     expect(val.text).to.equal(mockObjPub2.text)
   })
@@ -119,13 +113,7 @@ describe('Tests', async function () {
   it('should be read only if only passed Public key and no private key', async function () {
     expect(readerOnly.writeEnabled()).to.be.false
     // need to wait until peers are confirmed as conencted before read
-    this.timeout(1000)
-    try {
-      var val = await readerOnly.readLatest()
-      expect(val).to.equal(mockObjPub2.text)
-    } catch (error) {
-      (error) => console.error(error)
-    }
+    expect(instance.latest.text).to.equal(mockObjPub2.text)
   })
 
   it('should ignore readonly publish command', function () {
