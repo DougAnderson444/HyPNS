@@ -16,7 +16,7 @@
       await myNode.close();
     });
 
-    setupInstance();
+    setupInstance(); // makes a new keyPair since nothin gis passed
   });
 
   // this function will be called automatically when mounted svelte component is destroyed
