@@ -17,7 +17,7 @@ import babelConfig from './babel.config.json'
  */
 const commonPlugins = [
   commonjs({
-    include: /node_modules/ // require is not defined?
+    include: [/node_modules/, /HyPNS/] // require is not defined?
   }), // converts Nodejs modules to ES6 module // https://rollupjs.org/guide/en/#rollupplugin-commonjs
   nodeGlobals(), // after commonjs, before builtins
   builtins(), // builtins after commonjs
