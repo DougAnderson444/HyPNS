@@ -6,3 +6,4 @@ debug.log
 hypns-bundle.js
 svelte-bundle.js
 dist
+browser
