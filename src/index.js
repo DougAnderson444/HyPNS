@@ -1,4 +1,8 @@
-/* eslint-disable no-unused-expressions */
+const path = require('path')
+
+// This is a dirty hack for browserify/rollup to work. 😅
+if (!path.posix) path.posix = path
+
 const Corestore = require('corestore')
 const SwarmNetworker = require('@corestore/networker')
 
@@ -10,23 +14,21 @@ var list = require('@DougAnderson444/kappa-view-list')
 var memdb = require('level-mem')
 
 var RAM = require('random-access-memory')
-const RAI = require('@DougAnderson444/random-access-idb')
-
-const pify = require('pify') // promisify
-// var EventEmitter = require('events').EventEmitter
-// const once = require('events.once') // polyfill for nodejs events.once in the browser
+var RAA = require('random-access-application')
+//  const RAI = require('@DougAnderson444/random-access-idb') // inserted at browser build time as alias
 
 const hcrypto = require('hypercore-crypto')
 const sodium = require('sodium-universal')
 
 const EventEmitter = require('events')
 
-const isBrowser = process.title === 'browser'
+const DEFAULT_APPLICATION_NAME = 'hypnsapplication'
 
 class HyPNS {
   constructor (opts) {
+    const applicationName = opts.applicationName || DEFAULT_APPLICATION_NAME
     this._storage =
-      opts.persist === false || !opts.storage ? RAM : getNewStorage()
+      opts.persist === false || !opts.storage ? RAM : RAA(applicationName)
     this.store = new Corestore(this._storage)
     this.swarmNetworker
     this.network
@@ -78,8 +80,8 @@ class HyPNSInstance extends EventEmitter {
     // eslint-disable-next-line no-unused-expressions
     this.multi
     this.core
-    this.latest
-    this.writable
+    this.latest = null
+    this.writable = false
     this.publish
   }
 
@@ -93,41 +95,38 @@ class HyPNSInstance extends EventEmitter {
       })
       this.network.swarm(this.multi)
 
-      /**
-       * KAPPA VIEWS of the multifeed
-       */
-      var timestampView = list(memdb(), (msg, next) => {
-        // only index those msg with valid signature
-        const valid =
-          msg.value &&
-          msg.value.text &&
-          msg.value.timestamp &&
-          typeof msg.value.timestamp === 'string' &&
-          this.verify(
-            msg.value.text + ' ' + msg.value.timestamp,
-            msg.value.signature
-          )
-        if (valid) {
-          // sort on the 'timestamp' field
-          next(null, [msg.value.timestamp])
-        } else {
-          next()
-        }
-      })
-
       this.multi.ready((err) => {
         if (err) throw Error('Multifeed not ready')
+
         this.core = kappa(this.store, { multifeed: this.multi }) // store not used since we pass in a multifeed
 
+        var timestampView = list(memdb(), (msg, next) => {
+          // only index those msg with valid signature
+          const valid =
+            msg.value &&
+            msg.value.text &&
+            msg.value.timestamp &&
+            typeof msg.value.timestamp === 'string' &&
+            this.verify(
+              msg.value.text + ' ' + msg.value.timestamp,
+              msg.value.signature
+            )
+          if (valid) {
+            // sort on the 'timestamp' field
+            next(null, [msg.value.timestamp])
+          } else {
+            next()
+          }
+        })
         // read
         this.core.use('pointer', timestampView)
         this.core.api.pointer.tail(1, (msgs) => {
           this.latest = msgs[0].value
           this.emit('update', msgs[0].value)
-          // this.beacon.emit('update', msgs[0].value)
         })
 
-        this.core.ready('pointer', () => {
+        this.core.ready('pointer', (err) => {
+          if (err) throw Error('Core not ready')
           if (this.writeEnabled()) {
           // writer
             this.core.writer('kappa-local', (err, feed) => {
@@ -196,18 +195,6 @@ class HyPNSInstance extends EventEmitter {
     return this._keypair.publicKey.toString('hex')
   }
 
-  async readLatest () {
-    // get the last saved entry
-    const msgs = await pify(this.core.api.pointer.read)({
-      limit: 1,
-      reverse: true
-    })
-
-    return msgs && msgs.length > 0 && msgs[0].value && msgs[0].value.text
-      ? msgs[0].value.text
-      : null
-  }
-
   verify (message, signature) {
     // verify(message, signature, publicKey) // verify the signature of this value matches the public key under which it was published
     return hcrypto.verify(
@@ -219,8 +206,3 @@ class HyPNSInstance extends EventEmitter {
 }
 
 module.exports = HyPNS
-
-function getNewStorage () {
-  if (isBrowser) return RAI('hypns')
-  else return require('tmp').dirSync({ prefix: 'hypns-' }).name
-}
