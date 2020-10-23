@@ -1,28 +1,89 @@
 {
-  "presets": [
-    [
-      "@babel/preset-env",
-      { "targets": { "esmodules": true, "node": "current"} }
-    ]
-  ],
-  "plugins": [
-    [
-      "module-resolver",
-      {
-        "alias": {
-          "corestore": "@DougAnderson444/corestore",
-          "multifeed": "hypermultifeed",
-          "hyperswarm": "hyperswarm-web",
-          "util": "./node_modules/util/util.js"
-        }
-      }
-    ]
-  ],
   "env": {
     "test": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "targets": {
+              "node": "current"
+            },
+            "modules": "commonjs"
+          }
+        ]
+      ],
       "plugins": [
         [
+          "module-resolver",
+          {
+            "alias": {
+              "multifeed": "hypermultifeed"
+            }
+          }
+        ],
+        [
           "istanbul"
+        ]
+      ]
+    },
+    "browser": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "targets": {
+              "esmodules": true
+            },
+            "modules": "auto"
+          }
+        ]
+      ]
+    },
+    "browserify": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "targets": {
+              "esmodules": true
+            },
+            "modules": "auto"
+          }
+        ]
+      ],
+      "plugins": [
+        [
+          "module-resolver",
+          {
+            "alias": {
+              "multifeed": "hypermultifeed",
+              "hyperswarm": "hyperswarm-web",
+              "util": "./node_modules/util/util.js"
+            }
+          }
+        ]
+      ]
+    },
+    "module": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "targets": {
+              "node": "current"
+            },
+            "modules": false
+          }
+        ]
+      ],
+      "plugins": [
+        [
+          "module-resolver",
+          {
+            "alias": {
+              "multifeed": "hypermultifeed"
+            }
+          }
         ]
       ]
     }
