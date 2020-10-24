@@ -15,14 +15,6 @@ import babelConfig from './babel.config.json'
  * Note that most of the times @rollup/plugin-commonjs should go before other plugins that transform your modules — this is to prevent other plugins from making changes that break the CommonJS detection. An exception for this rule is the Babel plugin, if you're using it then place it before the commonjs one.
  * Contradicts: https://github.com/rollup/rollup-plugin-commonjs/issues/239#issuecomment-353764860
  */
-const commonPlugins = [
-  commonjs({
-    include: [/node_modules/, /HyPNS/] // require is not defined?
-  }), // converts Nodejs modules to ES6 module // https://rollupjs.org/guide/en/#rollupplugin-commonjs
-  nodeGlobals(), // after commonjs, before builtins
-  builtins(), // builtins after commonjs
-  json()
-]
 /**
  * babel-plugin-transform-commonjs: convert Node-style CommonJS modules into the ES module
  * @babel/plugin-transform-modules-commonjs: transforms ECMAScript modules to CommonJS
@@ -72,7 +64,12 @@ export default [
         plugins: babelConfig.env.browser.plugins,
         babelHelpers: 'bundled'
       }),
-      ...commonPlugins
+      commonjs({
+        include: [/node_modules/, /HyPNS/, /hypns/] // require is not defined?
+      }), // converts Nodejs modules to ES6 module // https://rollupjs.org/guide/en/#rollupplugin-commonjs
+      nodeGlobals(), // after commonjs, before builtins
+      builtins(), // builtins after commonjs
+      json()
     ]
   },
 
@@ -115,8 +112,7 @@ export default [
         presets: babelConfig.env.module.presets,
         plugins: babelConfig.env.module.plugins,
         babelHelpers: 'bundled'
-      }),
-      ...commonPlugins
+      })
     ]
   }
 ]
