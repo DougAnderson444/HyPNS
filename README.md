@@ -6,6 +6,8 @@
 
 ## Use
 
+> `npm install --save hypns`
+or
 > `npm install --save https://github.com/DougAnderson444/HyPNS`
 
 ## What?

@@ -15,7 +15,6 @@ var memdb = require('level-mem')
 
 var RAM = require('random-access-memory')
 var RAA = require('random-access-application')
-//  const RAI = require('@DougAnderson444/random-access-idb') // inserted at browser build time as alias
 
 const hcrypto = require('hypercore-crypto')
 const sodium = require('sodium-universal')
