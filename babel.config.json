@@ -31,10 +31,21 @@
         [
           "@babel/preset-env",
           {
-            "targets": {
-              "esmodules": true
-            },
-            "modules": "auto"
+            "corejs": { "version": 3, "proposals": true },
+            "useBuiltIns": "usage",
+            "targets": "defaults"
+          }
+        ]
+      ],
+      "plugins": [
+        [
+          "module-resolver",
+          {
+            "alias": {
+              "multifeed": "hypermultifeed",
+              "hyperswarm": "hyperswarm-web",
+              "util": "./node_modules/util/util.js"
+            }
           }
         ]
       ]
@@ -58,7 +69,8 @@
             "alias": {
               "multifeed": "hypermultifeed",
               "hyperswarm": "hyperswarm-web",
-              "util": "./node_modules/util/util.js"
+              "util": "./node_modules/util/util.js",
+              "random-access-application": "@DougAnderson444/random-access-idb"
             }
           }
         ]
