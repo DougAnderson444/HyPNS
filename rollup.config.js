@@ -1,4 +1,4 @@
-import resolve from '@rollup/plugin-node-resolve'
+import { nodeResolve } from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
 import alias from '@rollup/plugin-alias'
 
@@ -43,6 +43,7 @@ export default [
       }
     ],
     plugins: [
+      json(),
       alias({
         entries: [
           { find: 'utils', replacement: './node_modules/util/util.js' },
@@ -52,24 +53,26 @@ export default [
           { find: 'random-access-application', replacement: '@DougAnderson444/random-access-idb' }
         ]
       }),
-      // #1 resolve before commonjs
-      resolve({
-        browser: true,
-        preferBuiltins: false
-      }),
+
       // #2 babel before commonjs, after resolve
       babel({
         exclude: /node_modules/, // if excluded, get require not defined...
-        presets: babelConfig.env.browser.presets,
+        // presets: babelConfig.env.browser.presets, // if these are included, the deps are not bundled
         plugins: babelConfig.env.browser.plugins,
         babelHelpers: 'bundled'
       }),
+      // #1 resolve before commonjs
+      nodeResolve(
+        {
+          browser: true,
+          preferBuiltins: false
+        }
+      ),
       commonjs({
         include: [/node_modules/, /HyPNS/, /hypns/] // require is not defined?
       }), // converts Nodejs modules to ES6 module // https://rollupjs.org/guide/en/#rollupplugin-commonjs
       nodeGlobals(), // after commonjs, before builtins
-      builtins(), // builtins after commonjs
-      json()
+      builtins() // builtins after commonjs
     ]
   },
 
@@ -80,33 +83,12 @@ export default [
   // an array for the `output` option, where we can specify
   // `file` and `format` for each target)
   {
-    external: [ // suppress rollup warning by makig intentions explicit
-      'tmp',
-      'pify',
-      'corestore',
-      'level-mem',
-      'kappa-core',
-      'hypermultifeed',
-      'hypercore-crypto',
-      'sodium-universal',
-      'random-access-memory',
-      'random-access-application',
-      '@corestore/networker',
-      'hypermultifeed/networker',
-      '@DougAnderson444/kappa-view-list',
-      '@DougAnderson444/random-access-idb'
-    ],
     input: 'src/index.js',
     output: [
-      { file: pkg.main, format: 'cjs', exports: 'named' }, //
-      { file: pkg.module, format: 'es', exports: 'named' } //
+      { file: pkg.main, format: 'cjs', exports: 'named' }, // CommonJS (for Node)
+      { file: pkg.module, format: 'es', exports: 'named' } // ES module (for bundlers)
     ],
     plugins: [
-      // resolve({
-      //   resolveOnly: ['sodium-universal'],
-      //   extensions,
-      //   preferBuiltins: false
-      // }),
       babel({
         exclude: /node_modules/,
         presets: babelConfig.env.module.presets,
