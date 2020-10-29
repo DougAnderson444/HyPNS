@@ -19,6 +19,16 @@ const mockKeypair = {
   publicKey: mockPublicKey,
   secretKey: mockPrivateKey
 }
+
+const mockpersistPublicKey =
+  'a9cccf7294b78c4ff18eacf98378644a2ef53d236c63cc284958dcb8aaee4488'
+const mockpersistPrivateKey =
+  '2dbaf25b261799a1bd7a2a9d3c1b0d809a6d57e299e26cb858c3b2f5c581bb86a9cccf7294b78c4ff18eacf98378644a2ef53d236c63cc284958dcb8aaee4488'
+const mockPersistKeypair = {
+  publicKey: mockpersistPublicKey,
+  secretKey: mockpersistPrivateKey
+}
+
 const mockObjPub = {
   text: 'Some test data to publish ' + new Date().toISOString(),
   type: 'chat-message',
@@ -86,9 +96,6 @@ describe('Tests', async function () {
   })
 
   it('should publish a second value and emit to remote', async function () {
-    secondInstance.once('update', (val) => {
-      expect(val.text).to.equal(mockObjPub2.text)
-    })
     process.nextTick(() => {
       instance.publish(mockObjPub2)
     })
@@ -140,8 +147,12 @@ describe('Persist:true', function () {
   var persistH
   before(async function () {
     // runs once before the first test in this block
-    persistH = await persistNode.open({ keypair: mockKeypair })
-    await persistH.ready()
+    try {
+      persistH = await persistNode.open({ keypair: mockPersistKeypair })
+      await persistH.ready()
+    } catch (error) {
+      console.error(error)
+    }
   })
 
   after(function (done) {

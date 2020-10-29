@@ -13,8 +13,9 @@ var kappa = require('kappa-core')
 var list = require('@DougAnderson444/kappa-view-list')
 var memdb = require('level-mem')
 
-var RAM = require('random-access-memory')
-var RAA = require('random-access-application')
+const RAM = require('random-access-memory')
+const RAA = require('random-access-application')
+const RAI = require('@DougAnderson444/random-access-idb')
 
 const hcrypto = require('hypercore-crypto')
 const sodium = require('sodium-universal')
@@ -23,12 +24,25 @@ const EventEmitter = require('events')
 
 const DEFAULT_APPLICATION_NAME = 'hypnsapplication'
 
+const isBrowser = process.title === 'browser'
+
+// workaround until RAA / random-access-web is fixed
+function getNewStorage (name) {
+  if (isBrowser) {
+    // const name = Math.random().toString()
+    console.log(RAI)
+    return RAI(name)
+  } else {
+    return RAA(name)
+  }
+}
+
 class HyPNS {
   constructor (opts) {
     const applicationName = opts.applicationName || DEFAULT_APPLICATION_NAME
     this._storage =
-      opts.persist === false ? RAM : RAA(applicationName)
-    this.store = new Corestore(this._storage)
+      opts.persist === false ? RAM : getNewStorage(applicationName)
+    this.store = new Corestore(this._storage, opts.corestoreOpts)
     this.swarmNetworker
     this.network
 
