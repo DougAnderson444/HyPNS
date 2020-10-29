@@ -30,10 +30,9 @@ const isBrowser = process.title === 'browser'
 function getNewStorage (name) {
   if (isBrowser) {
     // const name = Math.random().toString()
-    console.log(RAI)
     return RAI(name)
   } else {
-    return RAA(name)
+    return name // RAA(name)
   }
 }
 

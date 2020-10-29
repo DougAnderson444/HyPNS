@@ -145,15 +145,7 @@ describe('Tests', async function () {
 describe('Persist:true', function () {
   var persistNode = new HyPNS({ persist: true }) // pass in optional Corestore and networker
   var persistH
-  before(async function () {
-    // runs once before the first test in this block
-    try {
-      persistH = await persistNode.open({ keypair: mockPersistKeypair })
-      await persistH.ready()
-    } catch (error) {
-      console.error(error)
-    }
-  })
+  var mockOb = { text: 'saved data ' + new Date().toISOString() }
 
   after(function (done) {
     // runs once after the last test in this block
@@ -164,11 +156,28 @@ describe('Persist:true', function () {
       .catch((err) => console.error(err))
   })
   it('should persist on disk', async function () {
-    const mockOb = { text: 'saved data ' + new Date().toISOString() }
+    try {
+      persistH = await persistNode.open({ keypair: mockPersistKeypair })
+      await persistH.ready()
+    } catch (error) {
+      console.error(error)
+    }
+
     persistH.publish(mockOb)
     this.timeout(3000)
     const [val] = await once(persistH, 'update')
     expect(val.text).to.equal(mockOb.text)
+  })
+  it('should persist second instance on disk', async function () {
+    try {
+      persistHP = await persistNode.open({ keypair: { publicKey: mockpersistPublicKey } })
+      persistHP.once('update', (val) => {
+        expect(val.text).to.equal(mockOb.text)
+      })
+      await persistHP.ready()
+    } catch (error) {
+      console.error(error)
+    }
   })
 })
 // process.exit(1);
