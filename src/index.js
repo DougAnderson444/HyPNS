@@ -27,7 +27,7 @@ class HyPNS {
   constructor (opts) {
     const applicationName = opts.applicationName || DEFAULT_APPLICATION_NAME
     this._storage =
-      opts.persist === false || !opts.storage ? RAM : RAA(applicationName)
+      opts.persist === false ? RAM : RAA(applicationName)
     this.store = new Corestore(this._storage)
     this.swarmNetworker
     this.network

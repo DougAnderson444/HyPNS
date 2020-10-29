@@ -31,7 +31,7 @@ This library signs the data with the secretKey then publishes that data under th
 This package is tested for both the browser (using Browserify) and Node. 
 
 If you want to use this is node, simply 
-> `const HyPNS = require('HyPNS')`
+> `const hypns = require('hypns')`
 
 If you want to use this in the browser, either
 
