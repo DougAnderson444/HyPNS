@@ -170,7 +170,7 @@ describe('Persist:true', function () {
   })
   it('should persist second instance on disk', async function () {
     try {
-      persistHP = await persistNode.open({ keypair: { publicKey: mockpersistPublicKey } })
+      const persistHP = await persistNode.open({ keypair: { publicKey: mockpersistPublicKey } })
       persistHP.once('update', (val) => {
         expect(val.text).to.equal(mockOb.text)
       })

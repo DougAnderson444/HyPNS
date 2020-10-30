@@ -131,7 +131,24 @@ class HyPNSInstance extends EventEmitter {
           }
         })
         // read
+
+        const readSaveTail = () => {
+          // grab tail and save it to this.latest
+          this.core.api.pointer.read({ limit: 1, reverse: true }, (err, msgs) => {
+            if (err) console.error(err)
+            if (msgs.length > 0) {
+              console.log('latest set to:', { latest: msgs[0].value })
+              this.latest = msgs[0].value
+            }
+          })
+        }
+
         this.core.use('pointer', timestampView)
+
+        this.core.api.pointer.ready(() => {
+          readSaveTail()
+        })
+
         this.core.api.pointer.tail(1, (msgs) => {
           this.latest = msgs[0].value
           this.emit('update', msgs[0].value)
