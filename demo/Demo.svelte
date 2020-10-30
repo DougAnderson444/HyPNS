@@ -25,11 +25,11 @@
   async function setupInstance(publicKey) {
     const nameInstance = await myNode.open({ keypair: { publicKey } }); // work with or without a PublicKey
     contacts = [...contacts, nameInstance];
-    console.log("contacts", contacts);
+    // console.log("contacts", contacts);
 
     nameInstance.beacon.on("update", (val) => {
-      console.log("beacon update", val);
-      console.log("latest", nameInstance.latest.text);
+      // console.log("beacon update", val);
+      // console.log("latest", nameInstance.latest.text);
       recent = nameInstance.latest.text;
     });
 
