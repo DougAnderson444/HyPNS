@@ -14,7 +14,6 @@ var list = require('@DougAnderson444/kappa-view-list')
 var memdb = require('level-mem')
 
 const RAM = require('random-access-memory')
-const RAA = require('random-access-application')
 const RAI = require('@DougAnderson444/random-access-idb')
 
 const hcrypto = require('hypercore-crypto')
@@ -107,7 +106,7 @@ class HyPNSInstance extends EventEmitter {
       })
       this.network.swarm(this.multi)
 
-      this.multi.ready((err) => {
+      this.multi.ready(async (err) => {
         if (err) throw Error('Multifeed not ready')
 
         this.core = kappa(this.store, { multifeed: this.multi }) // store not used since we pass in a multifeed
@@ -123,6 +122,7 @@ class HyPNSInstance extends EventEmitter {
               msg.value.text + ' ' + msg.value.timestamp,
               msg.value.signature
             )
+
           if (valid) {
             // sort on the 'timestamp' field
             next(null, [msg.value.timestamp])
@@ -130,32 +130,51 @@ class HyPNSInstance extends EventEmitter {
             next()
           }
         })
-        // read
 
-        const readSaveTail = () => {
-          // grab tail and save it to this.latest
-          this.core.api.pointer.read({ limit: 1, reverse: true }, (err, msgs) => {
-            if (err) console.error(err)
-            if (msgs.length > 0) {
-              console.log('latest set to:', { latest: msgs[0].value })
-              this.latest = msgs[0].value
-            }
+        /**
+         * If there are pre-exisitng hypercore feeds in storage,
+         * then wait for that feed to be ready so it can be indexed
+         * by the kappa view
+         */
+        if (this.core.feeds().length > 0) {
+          await new Promise((resolve, reject) => {
+            // TODO: multiple pre-existing feeds, foreach
+            this.core.feeds()[0].ready(() => {
+              resolve()
+            })
           })
         }
-
         this.core.use('pointer', timestampView)
 
-        this.core.api.pointer.ready(() => {
-          readSaveTail()
-        })
-
-        this.core.api.pointer.tail(1, (msgs) => {
-          this.latest = msgs[0].value
-          this.emit('update', msgs[0].value)
-        })
-
-        this.core.ready('pointer', (err) => {
+        this.core.ready(async (err) => {
           if (err) throw Error('Core not ready')
+
+          // perm listener
+          this.core.api.pointer.tail(1, (msgs) => {
+            console.log('tail updated', msgs[0].value)
+            this.latest = msgs[0].value
+            this.emit('update', msgs[0].value)
+          })
+
+          // initial read, if pre-existing tail value
+          this.readLatest = async () => {
+            return new Promise((resolve, reject) => {
+              this.core.api.pointer.read({ limit: 1, reverse: true }, (err, msgs) => {
+                if (err) console.error(err)
+                if (msgs.length > 0) {
+                  this.latest = msgs[0].value
+                  console.log('readLatest: ', this.latest)
+                  resolve(msgs[0].value)
+                } else {
+                  console.log('no tail msgs, resolve false')
+                  resolve(false)
+                }
+              })
+            })
+          }
+
+          await this.readLatest()
+
           if (this.writeEnabled()) {
           // writer
             this.core.writer('kappa-local', (err, feed) => {
