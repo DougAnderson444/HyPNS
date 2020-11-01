@@ -151,7 +151,7 @@ class HyPNSInstance extends EventEmitter {
 
           // perm listener
           this.core.api.pointer.tail(1, (msgs) => {
-            console.log('tail updated', msgs[0].value)
+            // console.log('tail updated', msgs[0].value)
             this.latest = msgs[0].value
             this.emit('update', msgs[0].value)
           })
@@ -163,10 +163,10 @@ class HyPNSInstance extends EventEmitter {
                 if (err) console.error(err)
                 if (msgs.length > 0) {
                   this.latest = msgs[0].value
-                  console.log('readLatest: ', this.latest)
+                  // console.log('readLatest: ', this.latest)
                   resolve(msgs[0].value)
                 } else {
-                  console.log('no tail msgs, resolve false')
+                  // console.log('no tail msgs, resolve false')
                   resolve(false)
                 }
               })
