@@ -41,6 +41,7 @@ class HyPNS {
     this._storage =
       opts.persist === false ? RAM : getNewStorage(applicationName)
     this.store = new Corestore(this._storage, opts.corestoreOpts)
+    this.sodium = sodium
     this.swarmNetworker
     this.network
 
