@@ -144,7 +144,7 @@ describe('Tests', async function () {
 })
 describe('Persist:true', function () {
   var persistNode = new HyPNS({ persist: true }) // pass in optional Corestore and networker
-  var persistH
+
   var mockOb = { text: 'saved data ' + new Date().toISOString() }
 
   after(function (done) {
@@ -156,6 +156,7 @@ describe('Persist:true', function () {
       .catch((err) => console.error(err))
   })
   it('should persist on disk', async function () {
+    var persistH
     try {
       persistH = await persistNode.open({ keypair: mockPersistKeypair })
       await persistH.ready()

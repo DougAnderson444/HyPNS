@@ -43,8 +43,6 @@ class HyPNS {
     this.store = new Corestore(this._storage, opts.corestoreOpts)
     this.sodium = sodium
     this.hcrypto = hcrypto
-    this.swarmNetworker
-    this.network
 
     // handle shutdown gracefully
     const closeHandler = async () => {
@@ -86,16 +84,11 @@ class HyPNSInstance extends EventEmitter {
     }
     this._keypair = opts.keypair
     this.key = this._keypair.publicKey
-    // this.publicKey = this._keypair.publicKey.toString('hex')
-    this.store = opts.store
+    this.publicKey = this._keypair.publicKey.toString('hex')
+    this.store = opts.temp ? RAM : opts.store
     this.network = opts.network
-    // this.beacon = new EventEmitter()
-    // eslint-disable-next-line no-unused-expressions
-    this.multi
-    this.core
     this.latest = null
     this.writable = false
-    this.publish
   }
 
   async ready () {
