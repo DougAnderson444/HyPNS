@@ -82,13 +82,14 @@ class HyPNSInstance extends EventEmitter {
       // make new keypair for them
       opts.keypair = hcrypto.keyPair()
     }
-    this._keypair = opts.keypair
+    this._keypair = opts.keypair // can be hex or buffer
     this.key = this._keypair.publicKey
     this.store = opts.temp ? RAM : opts.store
     this.network = opts.network
     this.latest = null
     this.writable = false
     this.publish
+    this.setMaxListeners(0)
   }
 
   async ready () {
