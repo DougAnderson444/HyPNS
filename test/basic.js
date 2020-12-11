@@ -29,6 +29,12 @@ const mockPersistKeypair = {
   secretKey: mockpersistPrivateKey
 }
 
+const mockReadOnlyPublicKey =
+  'aee2fc9db57f409cfa5edea42aa40790f3c1b314e3630a04f25b75ad42b71835'
+
+const mockBadSecretPublicKey =
+  'aef2fc9db57f409cfa5edea42aa40790f3c1b314e3630a04f25b75ad42b71835'
+
 const mockObjPub = {
   text: 'Some test data to publish ' + new Date().toISOString(),
   type: 'chat-message',
@@ -62,7 +68,7 @@ describe('Tests', async function () {
     secondInstance = await peerNode.open({ keypair: { publicKey: instance.publicKey } })
     await secondInstance.ready()
 
-    readerOnly = await myNode.open({ keypair: { publicKey: mockPublicKey } })
+    readerOnly = await myNode.open({ keypair: { publicKey: mockReadOnlyPublicKey } })
     await readerOnly.ready()
   })
 
@@ -135,7 +141,7 @@ describe('Tests', async function () {
 
   it('should not be writeEnabled if bad secret key is passed', async function () {
     var badSecretKey = await myNode.open({
-      keypair: { publicKey: mockPublicKey, secretKey: 'foo' }
+      keypair: { publicKey: mockBadSecretPublicKey, secretKey: 'foo' }
     })
     await badSecretKey.ready()
 
