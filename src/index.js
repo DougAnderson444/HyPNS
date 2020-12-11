@@ -43,6 +43,7 @@ class HyPNS {
     this.store = new Corestore(this._storage, opts.corestoreOpts)
     this.sodium = sodium
     this.hcrypto = hcrypto
+    this.instances = new Map()
 
     // handle shutdown gracefully
     const closeHandler = async () => {
@@ -55,15 +56,24 @@ class HyPNS {
     process.on('SIGTERM', closeHandler)
   }
 
+  // open a new instance on this hypns node
   async open (opts) {
     await this.store.ready()
     if (!this.swarmNetworker) this.swarmNetworker = new SwarmNetworker(this.store)
     if (!this.network) this.network = new MultifeedNetworker(this.swarmNetworker)
-    return new HyPNSInstance({ ...opts, ...this }) // TODO: Keep track of these to close them all? Does it matter?
+
+    // return if exists already on this node
+    if(opts && opts.keypair && opts.keypair.publicKey && this.instances.has(opts.keypair.publicKey))
+      return this.instances.get(opts.keypair.publicKey)
+
+    // if doesnt exist, return a new instance 
+    const instance = new HyPNSInstance({ ...opts, ...this })
+    this.instances.set(instance.publicKey, instance)
+    return this.instances.get(instance.publicKey)  
   }
 
   async close () {
-    // TODO: Close all instances too
+    // TODO: Close all instances too?
     this.store.close()
     if (this.swarmNetworker) await this.swarmNetworker.close() // Shut down the swarm networker.
   }
@@ -89,11 +99,15 @@ class HyPNSInstance extends EventEmitter {
     this.latest = null
     this.writable = false
     this.publish
-    this.setMaxListeners(0)
+    // this.setMaxListeners(0)
   }
 
   async ready () {
     return new Promise((resolve, reject) => {
+      
+      // if previosuly ready, resolve right away
+      // if(this.core) resolve(this)
+
       var self = this
 
       this.multi = new Multifeed(this.store, {
@@ -195,11 +209,11 @@ class HyPNSInstance extends EventEmitter {
 
               feed.ready(() => {
                 this.writable = true
-                resolve(feed)
+                resolve(this)
               })
             })
           } else {
-            resolve(this.core)
+            resolve(this)
           }
         })
       })
