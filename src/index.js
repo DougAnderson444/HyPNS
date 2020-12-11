@@ -104,9 +104,6 @@ class HyPNSInstance extends EventEmitter {
 
   async ready () {
     return new Promise((resolve, reject) => {
-      
-      // if previosuly ready, resolve right away
-      // if(this.core) resolve(this)
 
       var self = this
 
