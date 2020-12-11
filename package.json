@@ -1,6 +1,6 @@
 {
   "name": "hypns",
-  "version": "1.5.6",
+  "version": "1.5.7",
   "description": "Hybrid of Hyper-protocol and IPNS; a module to pin IPNS names using hyper-protocol",
   "main": "dist/index.js",
   "module": "module/index.mjs",
@@ -13,6 +13,7 @@
     "build-rolluponly": "rollup --config",
     "build": "npm run build-node && npm run build-module && npm run build:browserify",
     "prepublishOnly": "npm run build",
+    "publish": "npm publish --access public",
     "build-demo": "browserify -t [ babelify --global ] -t [ sveltify --svelte [ --hydratable=true ] ] demo/demo.js > demo/svelte-bundle.js && start demo/index.html",
     "demo-build-all": "npm run build:browserify && npm run build-demo",
     "test": "npm run test-browser && npm run test-node",
