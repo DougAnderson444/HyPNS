@@ -4,9 +4,9 @@
 const once = require('events.once') // polyfill for nodejs events.once in the browser
 
 const chai = require('chai')
-var chaiAsPromised = require('chai-as-promised')
+const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
-var expect = chai.expect
+const expect = chai.expect
 
 const HyPNS = require('../src')
 const helper = require('./lib')
@@ -52,12 +52,12 @@ process.on('warning', (warning) => {
   // console.warn(warning.stack) // Print the stack trace
 })
 
-var myNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
-var peerNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
+const myNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
+const peerNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
 
-var instance
-var secondInstance
-var readerOnly
+let instance
+let secondInstance
+let readerOnly
 
 describe('Tests', async function () {
   before(async function () {
@@ -113,7 +113,7 @@ describe('Tests', async function () {
   it('should ignore entries without a timestamp, be same as last test publish()', function (done) {
     // saved from another library to this publicKey
     helper.anotherWriter(instance.core, () => {
-      var totalEntries = 0
+      let totalEntries = 0
       instance.core.feeds().forEach((f) => {
         totalEntries += f.length
       })
@@ -140,7 +140,7 @@ describe('Tests', async function () {
   })
 
   it('should not be writeEnabled if bad secret key is passed', async function () {
-    var badSecretKey = await myNode.open({
+    const badSecretKey = await myNode.open({
       keypair: { publicKey: mockBadSecretPublicKey, secretKey: 'foo' }
     })
     await badSecretKey.ready()
@@ -149,9 +149,9 @@ describe('Tests', async function () {
   })
 })
 describe('Persist:true', function () {
-  var persistNode = new HyPNS({ persist: true }) // pass in optional Corestore and networker
-  var persistH
-  var mockOb = { text: 'saved data ' + new Date().toISOString() }
+  const persistNode = new HyPNS({ persist: true }) // pass in optional Corestore and networker
+  let persistH
+  const mockOb = { text: 'saved data ' + new Date().toISOString() }
 
   after(function (done) {
     // runs once after the last test in this block
@@ -162,7 +162,6 @@ describe('Persist:true', function () {
       .catch((err) => console.error(err))
   })
   it('should persist on disk', async function () {
-
     try {
       persistH = await persistNode.open({ keypair: mockPersistKeypair })
       await persistH.ready()
