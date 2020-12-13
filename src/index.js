@@ -9,9 +9,9 @@ const SwarmNetworker = require('@corestore/networker')
 const Multifeed = require('hypermultifeed')
 const MultifeedNetworker = require('hypermultifeed/networker')
 
-var kappa = require('kappa-core')
-var list = require('@DougAnderson444/kappa-view-list')
-var memdb = require('level-mem')
+const kappa = require('kappa-core')
+const list = require('@DougAnderson444/kappa-view-list')
+const memdb = require('level-mem')
 
 const RAM = require('random-access-memory')
 const RAI = require('@DougAnderson444/random-access-idb')
@@ -63,13 +63,14 @@ class HyPNS {
     if (!this.network) this.network = new MultifeedNetworker(this.swarmNetworker)
 
     // return if exists already on this node
-    if(opts && opts.keypair && opts.keypair.publicKey && this.instances.has(opts.keypair.publicKey))
+    if (opts && opts.keypair && opts.keypair.publicKey && this.instances.has(opts.keypair.publicKey)) {
       return this.instances.get(opts.keypair.publicKey)
+    }
 
-    // if doesnt exist, return a new instance 
+    // if doesnt exist, return a new instance
     const instance = new HyPNSInstance({ ...opts, ...this })
     this.instances.set(instance.publicKey, instance)
-    return this.instances.get(instance.publicKey)  
+    return this.instances.get(instance.publicKey)
   }
 
   async close () {
@@ -104,8 +105,7 @@ class HyPNSInstance extends EventEmitter {
 
   async ready () {
     return new Promise((resolve, reject) => {
-
-      var self = this
+      const self = this
 
       this.multi = new Multifeed(this.store, {
         rootKey: this._keypair.publicKey,
@@ -118,7 +118,7 @@ class HyPNSInstance extends EventEmitter {
 
         this.core = kappa(this.store, { multifeed: this.multi }) // store not used since we pass in a multifeed
 
-        var timestampView = list(memdb(), (msg, next) => {
+        const timestampView = list(memdb(), (msg, next) => {
           // only index those msg with valid signature
           const valid =
             msg.value &&
@@ -183,7 +183,7 @@ class HyPNSInstance extends EventEmitter {
           await this.readLatest()
 
           if (this.writeEnabled()) {
-          // writer
+            // writer
             this.core.writer('kappa-local', (err, feed) => {
               if (err) reject(err)
 
