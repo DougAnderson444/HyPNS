@@ -1,3 +1,7 @@
+/**
+ * This is currently not used in the build step, Browserify is.
+ * Leaving this here for reference. I have trouble getting Rollup to do the same thing as Browserify
+ */
 import { nodeResolve } from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
 import alias from '@rollup/plugin-alias'

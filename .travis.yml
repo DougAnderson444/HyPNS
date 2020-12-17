@@ -4,7 +4,14 @@ node_js:
 
 sudo: false
 
+before_script:
+  - "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
+
 script:
+  - fossa init
+  - fossa analyze
   - npm test -- --allow-chrome-as-root
 
-after_success: npm run coverage
+after_success: 
+  - npm run coverage
+  - fossa test
