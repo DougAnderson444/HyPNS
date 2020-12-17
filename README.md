@@ -37,7 +37,7 @@ If you want to use this in the browser, either
 
 - use the bundled code from `build:browserify` in `package.json`, or
 - use  `import HyPNS from 'HyPNS'` in your own code and `Browserify` yourself there
-- use `HyPNS-Svelte-Component` in a Svelte project (*** Recommended, takes care of open/close for you)
+- use [`HyPNS-Svelte-Component`](https://github.com/DougAnderson444/HyPNS-Svelte-Component) in a Svelte project (*** Recommended, takes care of open/close for you)
 
 # API
 
@@ -66,7 +66,7 @@ Publish that data to that Public Key using HyPNS:
 const HyPNS = require("hypns")
 const opts = { persist: false } // use RAM (or disk)
 const myNode = new HyPNS(opts) // pass in options
-const instance = await myNode.open() // open a new instance
+const instance = await myNode.open() // open a new instance. Makes a new keyPair for you
 await instance.ready() // let it configure first 
 instance.publish({ text: "Doug's favorite colour is blue" })
 instance.publicKey // a 64-char hex string dee2fc9db57f409cfa5edea42aa40790f3c1b314e3630a04f25b75ad42b71835
@@ -90,10 +90,10 @@ copy.on('update', (val) => {
 
 // update data from another machine
 const keypair = { publicKey, secretKey }
-authorizedWriter = await peerNode.open({ keypair }) // enter friend's public key
-await copy.ready() // wait for it...
+authorizedWriter = await peerNode.open({ keypair }) // enter your keypair
+await authorizedWriter.ready() // now you can update your feed from this machine too
 
-instance.publish({ text: "Doug's favorite colour is now mauve" })
+authorizedWriter.publish({ text: "Doug's favorite colour is now mauve" })
 
 ```
 
@@ -101,7 +101,7 @@ instance.publish({ text: "Doug's favorite colour is now mauve" })
 
 Used in [HyPNS-Svelte-Component](https://github.com/DougAnderson444/HyPNS-Svelte-Component) for Svelte Apps. 
 
-Will go great with `js-did-hyper` to publish [Decentralized Identifiers](https://www.w3.org/TR/did-core/Overview.html) from your home computer without the need for any blockchain to anchor it. 
+Will also go great with [`js-did-hypns`](https://github.com/DougAnderson444/js-did-hypns) to publish [Decentralized Identifiers](https://www.w3.org/TR/did-core/Overview.html) from your home computer without the need for any blockchain to anchor it. 
 
 Goes great with [IPFS](https://ipfs.io/) since now you can publish, pin, and propogate all your IPFS data by saving the root [CID](https://cid.ipfs.io/) to HyPNS and HyPNS will update all the peers holding that PublicKey that HyPNS uses.  
 
