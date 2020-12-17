@@ -1,5 +1,6 @@
 ![travis-ci-badge](https://travis-ci.com/DougAnderson444/HyPNS.svg?branch=main)
 [![codecov](https://codecov.io/gh/DougAnderson444/HyPNS/branch/main/graph/badge.svg?token=IQ3DGMTFKU)](https://codecov.io/gh/DougAnderson444/HyPNS)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FDougAnderson444%2FHyPNS.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FDougAnderson444%2FHyPNS?ref=badge_shield)
 
 # HyPNS
 [Hypercore-protocol](https://hypercore-protocol.org/) + [IPNS](https://docs.ipfs.io/concepts/ipns/) = HyPNS
@@ -132,3 +133,6 @@ const HyPNS = window.hypns
 ```
 
 TODO: Rollup: I tried to build an es module with Rollup, but had trouble getting it work. Will have to revisit when I have more time/resources.
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FDougAnderson444%2FHyPNS.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FDougAnderson444%2FHyPNS?ref=badge_large)
