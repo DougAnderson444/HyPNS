@@ -1,5 +1,9 @@
 # Change Log
 
+## v 1.6.0
+
+Add Noise Protocol to persist peer identity
+
 ## v 1.5.6
 
 Hypns now keeps track of all the open instances on a node, and can be accessed through
