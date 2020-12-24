@@ -37,9 +37,9 @@ function getNewStorage (name) {
 
 class HyPNS {
   constructor (opts) {
-    const applicationName = opts.applicationName || DEFAULT_APPLICATION_NAME
+    this.applicationName = opts.applicationName || DEFAULT_APPLICATION_NAME
     this._storage =
-      opts.persist === false ? RAM : getNewStorage(applicationName)
+      opts.persist === false ? RAM : getNewStorage(this.applicationName)
     this.store = new Corestore(this._storage, opts.corestoreOpts)
     this.sodium = sodium
     this.hcrypto = hcrypto
@@ -59,7 +59,16 @@ class HyPNS {
   // open a new instance on this hypns node
   async open (opts) {
     await this.store.ready()
-    if (!this.swarmNetworker) this.swarmNetworker = new SwarmNetworker(this.store)
+    if (!this.swarmNetworker) {
+      // Set up noiseKey to persist peer identity, just like in mauve's hyper-sdk
+      const noiseSeed = this.store.inner._deriveSecret(this.applicationName, 'replication-keypair')
+      const keyPair = {
+        publicKey: Buffer.alloc(sodium.crypto_scalarmult_BYTES),
+        secretKey: Buffer.alloc(sodium.crypto_scalarmult_SCALARBYTES)
+      }
+      sodium.crypto_kx_seed_keypair(keyPair.publicKey, keyPair.secretKey, noiseSeed)
+      this.swarmNetworker = new SwarmNetworker(this.store, { keyPair })
+    }
     if (!this.network) this.network = new MultifeedNetworker(this.swarmNetworker)
 
     // return if exists already on this node
