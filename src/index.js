@@ -22,6 +22,10 @@ const sodium = require('sodium-universal')
 const EventEmitter = require('events')
 
 const DEFAULT_APPLICATION_NAME = 'hypnsapplication'
+const DEFAULT_SWARM_OPTS = {
+  extensions: [],
+  preferredPort: 42666
+}
 
 const isBrowser = process.title === 'browser'
 
@@ -44,6 +48,7 @@ class HyPNS {
     this.sodium = sodium
     this.hcrypto = hcrypto
     this.instances = new Map()
+    this.swarmOpts = opts.swarmOpts
 
     // handle shutdown gracefully
     const closeHandler = async () => {
@@ -67,7 +72,7 @@ class HyPNS {
         secretKey: Buffer.alloc(sodium.crypto_scalarmult_SCALARBYTES)
       }
       sodium.crypto_kx_seed_keypair(keyPair.publicKey, keyPair.secretKey, noiseSeed)
-      this.swarmNetworker = new SwarmNetworker(this.store, { keyPair })
+      this.swarmNetworker = new SwarmNetworker(this.store, Object.assign({ keyPair }, DEFAULT_SWARM_OPTS, this.swarmOpts))
     }
     if (!this.network) this.network = new MultifeedNetworker(this.swarmNetworker)
 

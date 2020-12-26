@@ -1,5 +1,11 @@
 # Change Log
 
+List of major changes below.
+
+## v 1.6.1
+
+Add swarm options for hypwerswarm-web-proxy
+
 ## v 1.6.0
 
 Add Noise Protocol to persist peer identity
