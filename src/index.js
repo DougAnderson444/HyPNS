@@ -49,6 +49,7 @@ class HyPNS {
     this.hcrypto = hcrypto
     this.instances = new Map()
     this.swarmOpts = opts.swarmOpts
+    this.opts = { staticNoiseKey: opts.staticNoiseKey || false }
 
     // handle shutdown gracefully
     const closeHandler = async () => {
@@ -66,13 +67,17 @@ class HyPNS {
     await this.store.ready()
     if (!this.swarmNetworker) {
       // Set up noiseKey to persist peer identity, just like in mauve's hyper-sdk
-      const noiseSeed = this.store.inner._deriveSecret(this.applicationName, 'replication-keypair')
-      const keyPair = {
-        publicKey: Buffer.alloc(sodium.crypto_scalarmult_BYTES),
-        secretKey: Buffer.alloc(sodium.crypto_scalarmult_SCALARBYTES)
+      const swarmOpts = this.swarmOpts || {}
+      if (this.opts.staticNoiseKey) {
+        const noiseSeed = this.store.inner._deriveSecret(this.applicationName, 'replication-keypair')
+        const keyPair = {
+          publicKey: Buffer.alloc(sodium.crypto_scalarmult_BYTES),
+          secretKey: Buffer.alloc(sodium.crypto_scalarmult_SCALARBYTES)
+        }
+        sodium.crypto_kx_seed_keypair(keyPair.publicKey, keyPair.secretKey, noiseSeed)
+        Object.assign(swarmOpts, { keyPair }, DEFAULT_SWARM_OPTS)
       }
-      sodium.crypto_kx_seed_keypair(keyPair.publicKey, keyPair.secretKey, noiseSeed)
-      this.swarmNetworker = new SwarmNetworker(this.store, Object.assign({ keyPair }, DEFAULT_SWARM_OPTS, this.swarmOpts))
+      this.swarmNetworker = new SwarmNetworker(this.store, swarmOpts)
     }
     if (!this.network) this.network = new MultifeedNetworker(this.swarmNetworker)
 
@@ -113,7 +118,7 @@ class HyPNSInstance extends EventEmitter {
     this.network = opts.network
     this.latest = null
     this.writable = false
-    this.publish
+    this.publish = null
     // this.setMaxListeners(0)
   }
 

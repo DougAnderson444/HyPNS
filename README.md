@@ -96,6 +96,14 @@ await authorizedWriter.ready() // now you can update your feed from this machine
 
 authorizedWriter.publish({ text: "Doug's favorite colour is now mauve" })
 
+// Get all the HyPNS peer instances to which this node is currently connected
+// does not persist across restarts, so might want to track the list of peers in a db
+const peerMap = myNode.instances // a javascript Map of all instances this node is connected to
+for (let peer of peerMap) { // the same as of recipeMap.entries()
+  console.log(peer); // (instancePublicKey, instanceObject)  (and so on)
+}
+
+
 ```
 
 # Wine-Pairing
