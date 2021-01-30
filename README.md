@@ -5,6 +5,10 @@
 # HyPNS
 [Hypercore-protocol](https://hypercore-protocol.org/) + [IPNS](https://docs.ipfs.io/concepts/ipns/) = HyPNS
 
+## Status
+
+In active development, API may change. Feel free to help out if you like :)
+
 ## Use
 
 > npm install --save hypns
