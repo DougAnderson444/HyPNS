@@ -69,8 +69,7 @@ class HyPNS {
       // Set up noiseKey to persist peer identity, just like in mauve's hyper-sdk
       const swarmOpts = this.swarmOpts || {}
       if (this.opts.staticNoiseKey) {
-        const noiseSeed = this.getDeviceSeed()
-        const keyPair = this.getDeviceMasterKeypair(noiseSeed)
+        const keyPair = this.getKeypair()
         Object.assign(swarmOpts, { keyPair }, DEFAULT_SWARM_OPTS)
       }
       this.swarmNetworker = new SwarmNetworker(this.store, swarmOpts)
@@ -103,16 +102,16 @@ class HyPNS {
   async getKeypair (seed) {
     seed = seed || await this.getDeviceSeed()
     const keyPair = {
-      publicKey: Buffer.alloc(sodium.crypto_scalarmult_BYTES),
-      privateKey: Buffer.alloc(sodium.crypto_scalarmult_SCALARBYTES)
+      publicKey: Buffer.alloc(sodium.crypto_sign_PUBLICKEYBYTES),
+      privateKey: Buffer.alloc(sodium.crypto_sign_SECRETKEYBYTES)
     }
-    sodium.crypto_kx_seed_keypair(keyPair.publicKey, keyPair.privateKey, seed)
+    sodium.crypto_sign_seed_keypair(keyPair.publicKey, keyPair.privateKey, seed)
     return keyPair
   }
 
   async deriveKeypair (context, subkeyNumber, origSeed) {
     origSeed = origSeed || await this.getDeviceSeed()
-    const newSeed = Buffer.alloc(sodium.crypto_kx_SEEDBYTES)
+    const newSeed = Buffer.alloc(sodium.crypto_sign_SEEDBYTES)
     const ctx = Buffer.alloc(sodium.crypto_kdf_CONTEXTBYTES)
     ctx.write(context)
     sodium.crypto_kdf_derive_from_key(newSeed, subkeyNumber, ctx, origSeed)
