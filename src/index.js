@@ -69,7 +69,12 @@ class HyPNS {
       // Set up noiseKey to persist peer identity, just like in mauve's hyper-sdk
       const swarmOpts = this.swarmOpts || {}
       if (this.opts.staticNoiseKey) {
-        const keyPair = this.getKeypair()
+        const noiseSeed = this.store.inner._deriveSecret(this.applicationName, 'replication-keypair')
+        const keyPair = {
+          publicKey: Buffer.alloc(sodium.crypto_scalarmult_BYTES),
+          secretKey: Buffer.alloc(sodium.crypto_scalarmult_SCALARBYTES)
+        }
+        sodium.crypto_kx_seed_keypair(keyPair.publicKey, keyPair.secretKey, noiseSeed)
         Object.assign(swarmOpts, { keyPair }, DEFAULT_SWARM_OPTS)
       }
       this.swarmNetworker = new SwarmNetworker(this.store, swarmOpts)
