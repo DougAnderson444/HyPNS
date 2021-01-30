@@ -2,6 +2,10 @@
 
 List of major changes below.
 
+## v 1.6.4
+
+Expose the device master key and the ability to generate master keypair and subkeys for this device. Useful if you want to link an identity to this device. 
+
 ## v 1.6.1
 
 Add swarm options for hypwerswarm-web-proxy
