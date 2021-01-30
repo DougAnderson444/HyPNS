@@ -80,6 +80,22 @@ describe('Tests', async function () {
       .catch(err => console.error(err))
   })
 
+  it('should have a device master seed', async function () {
+    const nameSpace = 'device-seed'
+    const seed = await myNode.getDeviceSeed()
+    expect(seed.toString('hex')).to.equal(myNode.store.inner._deriveSecret(myNode.applicationName, nameSpace).toString('hex'))
+
+    const masterKeypair = await myNode.getKeypair()
+    expect(masterKeypair).to.have.property('publicKey')
+    expect(masterKeypair).to.have.property('privateKey')
+
+    const context = 'mockContext'
+    const subkeyNumber = 1
+    const derivedKeypair = await myNode.deriveKeypair(context, subkeyNumber)
+    expect(derivedKeypair).to.have.property('publicKey')
+    expect(derivedKeypair).to.have.property('privateKey')
+  })
+
   it('should create a HyPNS instance', async function () {
     expect(instance.publicKey).to.equal(mockPublicKey)
   })
