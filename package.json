@@ -1,6 +1,6 @@
 {
   "name": "hypns",
-  "version": "1.6.6",
+  "version": "1.6.7",
   "description": "Hybrid of Hyper-protocol and IPNS; a module to pin IPNS names using hyper-protocol",
   "main": "dist/index.js",
   "module": "module/index.mjs",
