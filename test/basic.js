@@ -11,10 +11,13 @@ const expect = chai.expect
 const HyPNS = require('../src')
 const helper = require('./lib')
 
-const mockPublicKey =
-  'dee2fc9db57f409cfa5edea42aa40790f3c1b314e3630a04f25b75ad42b71835'
-const mockPrivateKey =
-  '1e9813baf16eb415a61a56693b037d5aec294279b35a814aff239a0c61f71d3bdee2fc9db57f409cfa5edea42aa40790f3c1b314e3630a04f25b75ad42b71835'
+// const mockPublicKey =
+//   'dee2fc9db57f409cfa5edea42aa40790f3c1b314e3630a04f25b75ad42b71835'
+// const mockPrivateKey =
+//   '1e9813baf16eb415a61a56693b037d5aec294279b35a814aff239a0c61f71d3bdee2fc9db57f409cfa5edea42aa40790f3c1b314e3630a04f25b75ad42b71835'
+const mockPublicKey = '77b39dccbaef073ef78c78bfa111bd90cec96cc208efe985984eef84c467e7fb'
+const mockPrivateKey = '51f5ef5ebeaf66751b4024f8ed03a0cb522b3d605c9597081af50491c18253f277b39dccbaef073ef78c78bfa111bd90cec96cc208efe985984eef84c467e7fb'
+
 const mockKeypair = {
   publicKey: mockPublicKey,
   secretKey: mockPrivateKey
@@ -94,6 +97,11 @@ describe('Tests', async function () {
     const derivedKeypair = await myNode.deriveKeypair(context, subkeyNumber)
     expect(derivedKeypair).to.have.property('publicKey')
     expect(derivedKeypair).to.have.property('secretKey')
+  })
+
+  it('should have accessible corestore', async function () {
+    const store = await myNode.corestore
+    expect(store._id).to.equal(myNode.store._id)
   })
 
   it('should create a HyPNS instance', async function () {
