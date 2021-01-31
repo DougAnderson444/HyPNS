@@ -87,13 +87,13 @@ describe('Tests', async function () {
 
     const masterKeypair = await myNode.getKeypair()
     expect(masterKeypair).to.have.property('publicKey')
-    expect(masterKeypair).to.have.property('privateKey')
+    expect(masterKeypair).to.have.property('secretKey')
 
     const context = 'mockContext'
     const subkeyNumber = 1
     const derivedKeypair = await myNode.deriveKeypair(context, subkeyNumber)
     expect(derivedKeypair).to.have.property('publicKey')
-    expect(derivedKeypair).to.have.property('privateKey')
+    expect(derivedKeypair).to.have.property('secretKey')
   })
 
   it('should create a HyPNS instance', async function () {
