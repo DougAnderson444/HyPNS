@@ -40,11 +40,11 @@ function getNewStorage (name) {
 }
 
 class HyPNS {
-  constructor (opts) {
+  constructor (opts = {}) {
     this.applicationName = opts.applicationName || DEFAULT_APPLICATION_NAME
     this._storage =
       opts.persist === false ? RAM : getNewStorage(this.applicationName)
-    this.store = new Corestore(this._storage, opts.corestoreOpts)
+    this.store = opts.corestore || new Corestore(this._storage, opts.corestoreOpts)
     this.sodium = sodium
     this.hcrypto = hcrypto
     this.instances = new Map()
@@ -84,6 +84,7 @@ class HyPNS {
       Object.assign(swarmOpts, { keyPair }, DEFAULT_SWARM_OPTS)
     }
     this.swarmNetworker = new SwarmNetworker(this.store, swarmOpts)
+    this.swarmNetworker.listen()
     this.initialized = true
   }
 
@@ -138,7 +139,7 @@ class HyPNS {
 }
 
 class HyPNSInstance extends EventEmitter {
-  constructor (opts) {
+  constructor (opts = {}) {
     super()
     if (
       !opts.keypair ||
