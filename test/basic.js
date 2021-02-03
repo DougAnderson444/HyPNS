@@ -179,7 +179,7 @@ describe('Persist:true', function () {
 
   after(function (done) {
     // runs once after the last test in this block
-    this.timeout(20000) // takes time to close all the connections
+    this.timeout(12000) // takes time to close all the connections
     persistNode
       .close()
       .then(done)
