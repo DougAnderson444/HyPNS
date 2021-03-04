@@ -79,7 +79,7 @@ describe('Tests', async function () {
     // runs once after the last test in this block
     const p1 = myNode.close()
     const p2 = peerNode.close()
-    this.timeout(20000) // takes time to close all the connections
+    this.timeout(22000) // takes time to close all the connections
     // await Promise.all([p1, p2]) // this breaks the Nodejs test, sometimes, for some reason
   })
 
@@ -179,7 +179,7 @@ describe('Persist:true', function () {
 
   after(function (done) {
     // runs once after the last test in this block
-    this.timeout(12000) // takes time to close all the connections
+    this.timeout(21000) // takes time to close all the connections
     persistNode
       .close()
       .then(done)
