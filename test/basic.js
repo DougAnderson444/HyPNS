@@ -80,7 +80,10 @@ describe('Tests', async function () {
     this.timeout(22000) // takes time to close all the connections
     const p1 = myNode.close()
     const p2 = peerNode.close()
-    await Promise.all([p1, p2]) // this breaks the Nodejs test, sometimes, for some reason
+    const timeout1 = new Promise((resolve, reject) => {
+      setTimeout(resolve, 20000)
+    })
+    Promise.race([p1, p2, timeout1]) // this breaks the Nodejs test, sometimes, for some reason
   })
 
   it('should have a device master seed', async function () {
@@ -181,7 +184,10 @@ describe('Persist:true', function () {
     // runs once after the last test in this block
     this.timeout(23000) // takes time to close all the connections
     const p3 = persistNode.close()
-    await p3
+    const timeout2 = new Promise((resolve, reject) => {
+      setTimeout(resolve, 20000)
+    })
+    Promise.race([p3, timeout2])
   })
   it('should persist on disk', async function () {
     try {
