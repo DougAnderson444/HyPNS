@@ -21,6 +21,8 @@ const sodium = require('sodium-universal')
 
 const EventEmitter = require('events')
 
+const utils = require('./utils.js')
+
 const DEFAULT_APPLICATION_NAME = 'hypnsapplication'
 const DEFAULT_SWARM_OPTS = {
   extensions: [],
@@ -180,12 +182,12 @@ class HyPNSInstance extends EventEmitter {
           // only index those msg with valid signature
           const valid =
             msg.value &&
-            msg.value.text &&
+            msg.value.payload &&
             msg.value.timestamp &&
             typeof msg.value.timestamp === 'string' &&
             this.verify(
-              msg.value.text + ' ' + msg.value.timestamp,
-              msg.value.signature
+              Buffer.from(utils.hashIt(JSON.stringify(msg.value.payload) + '.' + msg.value.timestamp), 'utf8'),
+              Buffer.from(msg.value.signature, 'hex')
             )
 
           if (valid) {
@@ -245,14 +247,14 @@ class HyPNSInstance extends EventEmitter {
             this.core.writer('kappa-local', (err, feed) => {
               if (err) reject(err)
 
-              function pub (data) {
+              function pub (payload) {
                 const timestamp = new Date().toISOString()
                 const signature = hcrypto.sign(
-                  Buffer.from(data.text + ' ' + timestamp, 'utf8'),
+                  Buffer.from(utils.hashIt(JSON.stringify(payload) + '.' + timestamp), 'utf8'),
                   Buffer.from(self._keypair.secretKey, 'hex') // has to be self._ so that .bind doesn't replace it with feed
                 )
                 const objPub = {
-                  ...data,
+                  payload,
                   signature: signature.toString('hex'),
                   timestamp
                 }
@@ -311,8 +313,8 @@ class HyPNSInstance extends EventEmitter {
   verify (message, signature) {
     // verify(message, signature, publicKey) // verify the signature of this value matches the public key under which it was published
     return hcrypto.verify(
-      Buffer.from(message, 'utf8'),
-      Buffer.from(signature, 'hex'),
+      message,
+      signature,
       Buffer.from(this._keypair.publicKey, 'hex')
     )
   }
