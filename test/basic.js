@@ -77,9 +77,9 @@ describe('Tests', async function () {
 
   after(async function () {
     // runs once after the last test in this block
+    this.timeout(22000) // takes time to close all the connections
     const p1 = myNode.close()
     const p2 = peerNode.close()
-    this.timeout(22000) // takes time to close all the connections
     await Promise.all([p1, p2]) // this breaks the Nodejs test, sometimes, for some reason
   })
 
@@ -179,8 +179,8 @@ describe('Persist:true', function () {
 
   after(async function () {
     // runs once after the last test in this block
+    this.timeout(23000) // takes time to close all the connections
     const p3 = persistNode.close()
-    this.timeout(15000) // takes time to close all the connections
     await p3
   })
   it('should persist on disk', async function () {
