@@ -75,12 +75,12 @@ describe('Tests', async function () {
     await readerOnly.ready()
   })
 
-  after(function (done) {
+  after(async function () {
     // runs once after the last test in this block
-    this.timeout(12000) // takes time to close all the connections
-    Promise.all([myNode.close(), peerNode.close()])
-      .catch(err => console.error(err))
-      .finally(done())
+    const p1 = myNode.close()
+    const p2 = peerNode.close()
+    this.timeout(20000) // takes time to close all the connections
+    // await Promise.all([p1, p2]) // this breaks the Nodejs test, sometimes, for some reason
   })
 
   it('should have a device master seed', async function () {
