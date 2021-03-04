@@ -118,20 +118,20 @@ describe('Tests', async function () {
 
   it('should publish and emit the same', async function () {
     const retVal = instance.publish(mockObjPub)
-    expect(retVal.text).to.equal(mockObjPub.text)
-
+    expect(retVal).to.not.equal(false)
+    this.timeout(8000)
     const [val] = await once(instance, 'update')
-    expect(val.text).to.equal(mockObjPub.text)
-    expect(val).to.have.property('signature')
+    expect(val).to.not.equal(false)
+    expect(val).to.have.property('timestamp')
   })
 
   it('should publish a second value and emit to remote', async function () {
-    process.nextTick(() => {
+    process.nextTick(async () => {
       instance.publish(mockObjPub2)
     })
     this.timeout(8000) // sometimes this takes more than 2 seconds in the browser tests
     const [val] = await once(secondInstance, 'update')
-    expect(val.text).to.equal(mockObjPub2.text)
+    expect(val.payload).to.deep.equal(mockObjPub2)
   })
 
   it('should ignore entries without a timestamp, be same as last test publish()', function (done) {
@@ -142,7 +142,7 @@ describe('Tests', async function () {
         totalEntries += f.length
       })
       expect(totalEntries).to.equal(3)
-      expect(instance.latest.text).to.equal(mockObjPub2.text)
+      expect(instance.latest.payload).to.deep.equal(mockObjPub2)
       done()
     })
   })
@@ -150,7 +150,7 @@ describe('Tests', async function () {
   it('should be read only if only passed Public key and no private key', async function () {
     expect(readerOnly.writeEnabled()).to.be.false
     // need to wait until peers are confirmed as conencted before read
-    expect(instance.latest.text).to.equal(mockObjPub2.text)
+    expect(instance.latest.payload).to.deep.equal(mockObjPub2)
   })
 
   it('should ignore readonly publish command', function () {
@@ -196,13 +196,13 @@ describe('Persist:true', function () {
     persistH.publish(mockOb)
     this.timeout(3000)
     const [val] = await once(persistH, 'update')
-    expect(val.text).to.equal(mockOb.text)
+    expect(val.payload).to.deep.equal(mockOb)
   })
   it('should persist second instance on disk', async function () {
     try {
       const persistHP = await persistNode.open({ keypair: { publicKey: mockpersistPublicKey } })
       persistHP.once('update', (val) => {
-        expect(val.text).to.equal(mockOb.text)
+        expect(val.payload).to.deep.equal(mockOb)
       })
       await persistHP.ready()
     } catch (error) {
