@@ -1,6 +1,13 @@
 # Change Log
 
 List of major changes below.
+
+## v 2.0.0
+
+Breaking change:
+
+Change `hypns.publish()` to be a encoded stringified JSON payload with a signed BLAKE2b-256 hash of published content. Before you had to have a 'text' property, now it's just any object, hashed, and signed.
+
 ## v 1.6.8
 
 Expose init function to enable networker access before first instance is opened, so that the hyperswarm can be used by other functions (such as hyperswarm-web)
