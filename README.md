@@ -5,9 +5,11 @@
 # HyPNS
 [Hypercore-protocol](https://hypercore-protocol.org/) + [IPNS](https://docs.ipfs.io/concepts/ipns/) = HyPNS
 
+A library to post and pin data on Web 3.0
+
 ## Status
 
-In active development, API may change. Feel free to help out if you like :)
+In active pre-alpha development, API may change. Feel free to help out if you like :)
 
 ## Use
 
@@ -46,6 +48,8 @@ If you want to use this in the browser, either
 
 # API
 
+Also see the `basic tests` for latest on how to use the API.
+
 Take a public key and pin a signed mutable value to it
 
 Generate a ed25519 keypair 
@@ -70,33 +74,33 @@ Publish that data to that Public Key using HyPNS:
 ```js
 const HyPNS = require("hypns")
 const opts = { persist: false } // use RAM (or disk)
-const myNode = new HyPNS(opts) // pass in options
-const instance = await myNode.open() // open a new instance. Makes a new keyPair for you
+const myNode = new HyPNS(opts) // create a node, pass in options
+const instance = await myNode.open() // open a new instance. Makes a new keyPair for you if no options passed in
 await instance.ready() // let it configure first 
 instance.publish({ text: "Doug's favorite colour is blue" })
 instance.publicKey // a 64-char hex string dee2fc9db57f409cfa5edea42aa40790f3c1b314e3630a04f25b75ad42b71835
-instance.latest.text // "My favorite colour is blue" >> latest value stored to this key
+console.log(instance.latest) // { text: "Doug's favorite colour is blue" }
 
 // Share data with friends
 
 // on another machine...
 var peerNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
 // make a local copy
-copy = await peerNode.open({ keypair: { publicKey: "dee2fc9db57f409cfa5edea42aa40790f3c1b314e3630a04f25b75ad42b71835" } }) // enter friend's public key
+copy = await peerNode.open({ keypair: { publicKey: "dee2fc9db57f409cfa5edea42aa40790f3c1b314e3630a04f25b75ad42b71835" } }) // enter friend's public key. No secretKey = Read Only for my copy
 await copy.ready() // wait for it...
 
 // get latest
-copy.latest.text // "Doug's favorite colour is blue"
+copy.latest // { text: "Doug's favorite colour is blue" }
 
 // should update you whenever the other guy publishes an updated value 
 copy.on('update', (val) => {
-    console.log(val.text) // "Doug's favorite colour is now red"
+    console.log(val) // { text: "Doug's favorite colour is now red" }
 })
 
 // update data from another machine
 const keypair = { publicKey, secretKey }
 authorizedWriter = await peerNode.open({ keypair }) // enter your keypair
-await authorizedWriter.ready() // now you can update your feed from this machine too
+await authorizedWriter.ready() // now you can update your feed from this machine too, since you opened this node including the secretKey
 
 authorizedWriter.publish({ text: "Doug's favorite colour is now mauve" })
 
@@ -120,7 +124,7 @@ Goes great with [IPFS](https://ipfs.io/) since now you can publish, pin, and pro
 
 ```js
 
-instance.publish({ text: ipfsRootCID })
+instance.publish({ root: ipfsRootCID })
 
 ```
 # Build
