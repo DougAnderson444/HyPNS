@@ -55,14 +55,14 @@ process.on('warning', (warning) => {
   // console.warn(warning.stack) // Print the stack trace
 })
 
-const myNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
-const peerNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
-
 let instance
 let secondInstance
 let readerOnly
 
 describe('Tests', async function () {
+  const myNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
+  const peerNode = new HyPNS({ persist: false }) // pass in optional Corestore and networker
+
   before(async function () {
     // runs once before the first test in this block
     instance = await myNode.open({ keypair: mockKeypair })
@@ -80,7 +80,7 @@ describe('Tests', async function () {
     const p1 = myNode.close()
     const p2 = peerNode.close()
     this.timeout(22000) // takes time to close all the connections
-    // await Promise.all([p1, p2]) // this breaks the Nodejs test, sometimes, for some reason
+    await Promise.all([p1, p2]) // this breaks the Nodejs test, sometimes, for some reason
   })
 
   it('should have a device master seed', async function () {
@@ -177,13 +177,11 @@ describe('Persist:true', function () {
   let persistH
   const mockOb = { text: 'saved data ' + new Date().toISOString() }
 
-  after(function (done) {
+  after(async function () {
     // runs once after the last test in this block
-    this.timeout(21000) // takes time to close all the connections
-    persistNode
-      .close()
-      .then(done)
-      .catch((err) => console.error(err))
+    const p3 = persistNode.close()
+    this.timeout(15000) // takes time to close all the connections
+    await p3
   })
   it('should persist on disk', async function () {
     try {
