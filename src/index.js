@@ -47,8 +47,6 @@ class HyPNS {
     this._storage =
       opts.persist === false ? RAM : getNewStorage(this.applicationName)
     this.store = opts.corestore || new Corestore(this._storage, opts.corestoreOpts)
-    this.sodium = sodium
-    this.hcrypto = hcrypto
     this.instances = new Map()
     this.swarmOpts = opts.swarmOpts
     this.opts = { staticNoiseKey: opts.staticNoiseKey || false }
