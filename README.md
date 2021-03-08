@@ -9,9 +9,9 @@ A library to post and pin data on Web 3.0
 
 What's unique?
 
-❌🥇 No Tokens! No cryptocurrency!
+✔️🥇 No Tokens! No cryptocurrency!
 
-❌💰 Zero Fees!  
+✔️💰 Zero Fees!  
 
 ✔️💻 Use your OWN hardware! 
 
@@ -176,7 +176,9 @@ B) Option B
 const HyPNS = window.hypns
 ```
 
-TODO: Rollup: I tried to build an es module with Rollup, but had trouble getting it work. Will have to revisit when I have more time/resources.
+### Bundlers
+
+Note: Rollup and webpack were actually bigger than the browserify build. If you can make it smaller, I welcomeany PRs!
 
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FDougAnderson444%2FHyPNS.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FDougAnderson444%2FHyPNS?ref=badge_large)
