@@ -7,9 +7,19 @@
 
 A library to post and pin data on Web 3.0
 
+What's unique?
+
+❌🥇 No Tokens! No cryptocurrency!
+
+❌💰 Zero Fees!  
+
+✔️💻 Use your OWN hardware! 
+
+✔️🗃️ Conveniently Control Your Data 
+
 ## Status
 
-In active pre-alpha development, API may change. Feel free to help out if you like :)
+It works, but also is in active pre-alpha development, API may change. Feel free to help out if you like :)
 
 ## Use
 
@@ -112,6 +122,24 @@ for (let peer of peerMap) { // the same as of recipeMap.entries()
 }
 
 
+```
+
+If you really want to get your hands dirty, the node networking can be accessed too:
+
+```js
+// swarmNetworker is a corestore/networker
+// swarm is a hypwerswarm / hyperswarm-web 
+hypnsNode.swarmNetworker.swarm.on('connection', (socket, info) => {
+  console.log('node Connection added')
+  info.stream.on('data', (data) => console.log('stream data'))
+  socket.on('data', (data) => console.log('socket data'))
+})
+
+// networker is also a corestore/networker, same one as above
+hypnsInstance.network.networker.on('peer-add', (peer) => {
+  console.log('peer added ', { remotePublicKey: peer.remotePublicKey.toString('hex') })
+  peer.stream.on('data', (data) => console.log('peer stream data'))
+})
 ```
 
 # Wine-Pairing
