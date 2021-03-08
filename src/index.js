@@ -153,7 +153,7 @@ class HyPNSInstance extends EventEmitter {
     }
     this._keypair = opts.keypair // can be hex or buffer
     this.key = this._keypair.publicKey
-    this.store = opts.temp ? RAM : opts.store
+    this.store = opts.temp ? new Corestore(RAM, opts.corestoreOpts) : opts.store
     this.network = opts.network
     this.latest = null
     this.writable = false
