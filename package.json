@@ -93,7 +93,9 @@
     "url": "git+https://github.com/DougAnderson444/HyPNS.git"
   },
   "keywords": [
-    "HyPNS"
+    "HyPNS",
+    "IPFS",
+    "IPNS"
   ],
   "author": "Doug S Anderson",
   "license": "MIT",
