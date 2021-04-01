@@ -158,7 +158,7 @@ class HyPNSInstance extends EventEmitter {
     this.latest = null
     this.writable = false
     this.publish = null
-    // this.setMaxListeners(0)
+    this.setMaxListeners(0)
   }
 
   async ready () {
