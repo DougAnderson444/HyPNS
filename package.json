@@ -1,6 +1,6 @@
 {
   "name": "hypns",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Hybrid of Hyper-protocol and IPNS; a module to pin IPNS names using hyper-protocol",
   "main": "dist/index.js",
   "module": "module/index.js",
@@ -24,8 +24,8 @@
   },
   "dependencies": {
     "@corestore/networker": "^1.0.3",
-    "@DougAnderson444/kappa-view-list": "github:DougAnderson444/kappa-view-list",
-    "@DougAnderson444/random-access-idb": "github:DougAnderson444/random-access-idb",
+    "@DougAnderson444/kappa-view-list": "DougAnderson444/kappa-view-list",
+    "@DougAnderson444/random-access-idb": "DougAnderson444/random-access-idb",
     "core-js": "^3.6.5",
     "corestore": "^5.8.1",
     "dat-encoding": "^5.0.1",
@@ -33,7 +33,7 @@
     "hypercore": "^9.5.7",
     "hypercore-crypto": "^2.1.1",
     "hypercore-protocol": "^8.0.7",
-    "hypermultifeed": "github:DougAnderson444/hypermultifeed",
+    "hypermultifeed": "DougAnderson444/hypermultifeed",
     "hyperswarm-web": "^2.1.1",
     "kappa-core": "^6.0.0",
     "level-mem": "^5.0.1",
