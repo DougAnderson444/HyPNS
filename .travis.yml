@@ -1,6 +1,7 @@
 language: node_js
 node_js:
   - "12"
+  - "14"
 
 sudo: false
 
@@ -9,6 +10,7 @@ before_script:
   - npm i -g hyperswarm-web
   - hyperswarm-web &
   - node --version
+  - npm i npm@latest
 
 script:
   - fossa init
