@@ -137,6 +137,12 @@ describe('Tests', async function () {
     expect(val).to.deep.equal(mockObjPub2)
   })
 
+  it('should read latest values', async function () {
+    const msgs = await instance.readLatest(2)
+    expect(msgs[1].value.payload).to.deep.equal(mockObjPub)
+    expect(msgs[0].value.payload).to.deep.equal(mockObjPub2)
+  })
+
   it('should ignore entries without a timestamp, be same as last test publish()', function (done) {
     // saved from another library to this publicKey
     helper.anotherWriter(instance.core, () => {
