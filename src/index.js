@@ -1,6 +1,6 @@
 const path = require('path')
 
-// This is a dirty hack for browserify/rollup to work. 😅
+// This is a dirty hack for browserify to work. 😅
 if (!path.posix) path.posix = path
 
 const Corestore = require('corestore')
@@ -211,33 +211,31 @@ class HyPNSInstance extends EventEmitter {
         }
         this.core.use('pointer', timestampView)
 
-        this.core.ready(async (err) => {
+        // perm listener
+        this.core.api.pointer.tail(1, (msgs) => {
+          // console.log('tail updated', msgs[0].value)
+          this.latest = msgs[0].value.payload
+          this.emit('update', msgs[0].value.payload)
+        })
+
+        this.core.ready((err) => {
           if (err) throw Error('Core not ready')
 
-          // perm listener
-          this.core.api.pointer.tail(1, (msgs) => {
-            // console.log('tail updated', msgs[0].value)
-            this.latest = msgs[0].value.payload
-            this.emit('update', msgs[0].value.payload)
-          })
-
           // initial read, if pre-existing tail value
-          this.readLatest = async () => {
-            return new Promise((resolve, reject) => {
-              this.core.api.pointer.read({ limit: 1, reverse: true }, (err, msgs) => {
-                if (err) console.error(err)
-                if (msgs.length > 0) {
-                  this.latest = msgs[0].value.payload
-                  resolve(msgs[0].value.payload)
-                } else {
-                  // console.log('no tail msgs, resolve false')
-                  resolve(false)
-                }
-              })
+          this.readLatest = async (limit = 1) => {
+            this.core.api.pointer.read({ limit, reverse: true }, (err, msgs) => {
+              if (err) console.error(err)
+              if (msgs.length > 0) {
+                this.latest = msgs[0].value.payload
+                return msgs
+              } else {
+                // console.log('no tail msgs, resolve false')
+                return false
+              }
             })
           }
 
-          await this.readLatest()
+          this.readLatest()
 
           if (this.writeEnabled()) {
             // writer
