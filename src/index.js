@@ -219,16 +219,18 @@ class HyPNSInstance extends EventEmitter {
         })
 
         // initial read, if pre-existing tail value
-        this.readLatest = (limit = 1) => {
-          this.core.api.pointer.read({ limit, reverse: true }, (err, msgs) => {
-            if (err) console.error(err)
-            if (msgs.length > 0) {
-              this.latest = msgs[0].value.payload
-              return msgs
-            } else {
-              // console.log('no tail msgs, resolve false')
-              return false
-            }
+        this.readLatest = async (limit = 1) => {
+          return new Promise((resolve, reject) => {
+            this.core.api.pointer.read({ limit, reverse: true }, (err, msgs) => {
+              if (err) console.error(err)
+              if (msgs.length > 0) {
+                this.latest = msgs[0].value.payload
+                resolve(msgs)
+              } else {
+                // console.log('no tail msgs, resolve false')
+                resolve(false)
+              }
+            })
           })
         }
 
