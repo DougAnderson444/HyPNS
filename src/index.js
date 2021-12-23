@@ -163,16 +163,16 @@ class HyPNSInstance extends EventEmitter {
     constructor(opts = {}) {
         super()
         if (
-            (!opts.keypair ||
-                !opts.keypair.publicKey ||
-                !opts.keypair.publicKey === null ||
-                Buffer.byteLength(opts.keypair.publicKey, "hex") !==
-                    sodium.crypto_sign_PUBLICKEYBYTES) &&
-            !opts.wallet
+            !opts.keypair ||
+            !opts.keypair.publicKey ||
+            !opts.keypair.publicKey === null ||
+            Buffer.byteLength(opts.keypair.publicKey, "hex") !==
+                sodium.crypto_sign_PUBLICKEYBYTES
         ) {
             // make new keypair for them
             opts.keypair = hcrypto.keyPair()
         }
+
         if (opts.wallet) this.wallet = opts.wallet
 
         this._keypair = opts.keypair || {} // can be hex or buffer
@@ -190,17 +190,16 @@ class HyPNSInstance extends EventEmitter {
         return new Promise(async (resolve, reject) => {
             const self = this
 
-            if (this.wallet) {
+            if (!!this.wallet) {
                 // override what was previously set
                 const pk = await this.wallet.getPublicKey()
-                console.log("using pk ", { pk })
                 this._keypair.publicKey = Buffer.from(pk).toString("hex")
             }
 
-            this.key = this._keypair.publicKey
+            this.key = this._keypair.publicKey // hex
 
             this.multi = new Multifeed(this.store, {
-                rootKey: this._keypair.publicKey,
+                rootKey: this._keypair.publicKey, // hex
                 valueEncoding: "json",
             })
             this.network.swarm(this.multi)
@@ -254,7 +253,6 @@ class HyPNSInstance extends EventEmitter {
 
                 // perm listener
                 this.core.api.pointer.tail(1, (msgs) => {
-                    // console.log('tail updated', msgs[0].value)
                     this.latest = msgs[0].value.payload
                     this.emit("update", msgs[0].value.payload)
                 })
@@ -270,7 +268,6 @@ class HyPNSInstance extends EventEmitter {
                                     this.latest = msgs[0].value.payload
                                     resolve(msgs)
                                 } else {
-                                    // console.log('no tail msgs, resolve false')
                                     resolve(false)
                                 }
                             }
@@ -304,17 +301,18 @@ class HyPNSInstance extends EventEmitter {
 
                                 let signature
 
-                                if (this.wallet) {
-                                    signature = await this.wallet.ed25519.sign(
+                                if (!!self.wallet) {
+                                    signature = await self.wallet.ed25519.sign(
                                         dataToSign
                                     )
+                                    signature = Buffer.from(signature)
                                 } else {
                                     signature = hcrypto.sign(
                                         dataToSign,
                                         Buffer.from(
                                             self._keypair.secretKey,
                                             "hex"
-                                        ) // has to be self._ so that .bind doesn't replace it with feed
+                                        ) // has to be self.xxx so that .bind doesn't replace it with feed
                                     )
                                 }
                                 const objPub = {
@@ -352,11 +350,11 @@ class HyPNSInstance extends EventEmitter {
 
         // TODO: assert proper wallet features, publicKey and signing ability
         if (this.wallet) {
-            signature = await this.wallet.ed25519.sign(message)
+            signature = await this.wallet.ed25519.sign(message) // Uint8array
             const maybeVerified = await this.wallet.ed25519.verify(
-                this._keypair.publicKey,
+                Buffer.from(this._keypair.publicKey, "hex"), // hex to Buffer
                 message,
-                signature
+                Buffer.from(signature)
             )
             return maybeVerified
         } else {
@@ -388,11 +386,10 @@ class HyPNSInstance extends EventEmitter {
     }
 
     get publicKey() {
-        return this._keypair.publicKey.toString("hex")
+        return this._keypair.publicKey
     }
 
     verify(message, signature) {
-        // verify(message, signature, publicKey) // verify the signature of this value matches the public key under which it was published
         return hcrypto.verify(
             message,
             signature,
