@@ -103,12 +103,13 @@ class HyPNS {
         if (!this.network)
             this.network = new MultifeedNetworker(this.swarmNetworker)
 
-        // return if exists already on this node
+        // return if exists already on this node, and is not a writer (with a wallet opt)
         if (
             opts &&
             opts.keypair &&
             opts.keypair.publicKey &&
-            this.instances.has(opts.keypair.publicKey)
+            this.instances.has(opts.keypair.publicKey) &&
+            !opts.wallet // not opening a writer
         ) {
             return this.instances.get(opts.keypair.publicKey)
         }
@@ -260,6 +261,7 @@ class HyPNSInstance extends EventEmitter {
                 // initial read, if pre-existing tail value
                 this.readLatest = async (limit = 1) => {
                     return new Promise((resolve, reject) => {
+                        if (!this.core?.api?.pointer) resolve(false)
                         this.core.api.pointer.read(
                             { limit, reverse: true },
                             (err, msgs) => {
