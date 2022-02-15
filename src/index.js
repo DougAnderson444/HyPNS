@@ -352,13 +352,8 @@ class HyPNSInstance extends EventEmitter {
 
         // TODO: assert proper wallet features, publicKey and signing ability
         if (this.wallet) {
-            signature = await this.wallet.ed25519.sign(message) // Uint8array
-            const maybeVerified = await this.wallet.ed25519.verify(
-                Buffer.from(this._keypair.publicKey, "hex"), // hex to Buffer
-                message,
-                Buffer.from(signature)
-            )
-            return maybeVerified
+            const pk = await this.wallet.getPublicKey()
+            return !!pk
         } else {
             // legacy keypair use
 
