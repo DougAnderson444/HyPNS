@@ -178,7 +178,7 @@ const HyPNS = window.hypns
 
 ### Bundlers
 
-Note: Rollup and webpack were actually bigger than the browserify build. If you can make it smaller, I welcomeany PRs!
+Note: Rollup and webpack were actually bigger than the browserify build. If you can make it smaller, I welcomeany PRs! Esbuild perhaps?
 
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FDougAnderson444%2FHyPNS.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FDougAnderson444%2FHyPNS?ref=badge_large)
