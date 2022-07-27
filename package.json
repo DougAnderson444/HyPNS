@@ -1,9 +1,10 @@
 {
     "name": "hypns",
-    "version": "2.1.3",
+    "version": "2.1.4",
     "description": "Hybrid of Hyper-protocol and IPNS; a module to pin IPNS names using hyper-protocol",
     "_main": "dist/index.js",
     "_module": "module/index.js",
+    "module": "dist/hypns-bundle.js",
     "browser": "dist/hypns-bundle.js",
     "scripts": {
         "build:browserify": "cross-env BABEL_ENV=browserify browserify -t [ babelify --global --ignore [ test ] ] --standalone hypns ./src/index.js > ./dist/hypns-bundle.js",
